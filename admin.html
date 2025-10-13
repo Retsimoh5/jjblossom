@@ -1,386 +1,238 @@
 <!doctype html>
 <html lang="en">
 <head>
-  <meta charset="utf-8"/>
-  <meta name="viewport" content="width=device-width, initial-scale=1"/>
-  <title>🌸 JJBlossoms — Admin (LIVE via Firebase)</title>
-  <meta name="theme-color" content="#0f172a"/>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>🌸 JJBlossoms — Admin (LIVE)</title>
+  <meta name="theme-color" content="#0f172a" />
   <script src="https://cdn.tailwindcss.com"></script>
-  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;700;900&family=Cinzel:wght@700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@700&family=Noto+Sans+JP:wght@400;700&display=swap" rel="stylesheet">
+  <!-- Firebase (compat) -->
   <script src="https://www.gstatic.com/firebasejs/10.13.1/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.13.1/firebase-analytics-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.13.1/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.13.1/firebase-database-compat.js"></script>
+  <!-- XLSX for CSV import -->
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
   <style>
-    .brand{ font-family:'Cinzel','Noto Sans JP',system-ui,Segoe UI,Roboto,Helvetica,Arial }
-    .input{ width:100%; padding:.5rem .75rem; border-radius:.75rem; border:1px solid #cbd5e1 }
-    .btn{ display:inline-flex; align-items:center; gap:.5rem; padding:.45rem .9rem; border-radius:.75rem; border:1px solid #cbd5e1; background:#fff }
-    .card{ border:1px solid #e2e8f0; border-radius:1rem; background:#fff }
-    .pill{ padding:.15rem .5rem; border-radius:999px; font-size:.75rem }
+    .brand{font-family:'Cinzel','Noto Sans JP',system-ui,Segoe UI,Roboto,Helvetica,Arial}
+    .input{width:100%;padding:.5rem .75rem;border-radius:.75rem;border:1px solid #cbd5e1}
+    .btn{display:inline-flex;align-items:center;gap:.5rem;padding:.45rem .9rem;border-radius:.75rem;border:1px solid #cbd5e1;background:#fff}
+    .btn-primary{background:#0f172a;color:#fff;border-color:#0f172a}
+    .card{border:1px solid #e2e8f0;border-radius:1rem;background:#fff}
   </style>
 </head>
 <body class="bg-slate-50">
   <div class="max-w-7xl mx-auto p-4 sm:p-6 space-y-4">
-    <header class="flex items-end justify-between gap-3 flex-wrap">
+    <header class="flex flex-wrap items-end justify-between gap-3">
       <div>
         <h1 class="brand text-2xl sm:text-3xl font-bold">🌸 JJBlossoms — Admin (LIVE)</h1>
-        <p class="text-slate-600 text-sm">Connected to Firebase Realtime Database. Import from <b>shop.csv</b>, then edit items/stock and add Pokémon. DNA/Dungeon Frags are handled correctly.</p>
+        <p class="text-slate-600 text-sm">Connect once below, then edit items/stock and add Pokémon. Anonymous sign‑in to Firebase Realtime Database.</p>
       </div>
       <div class="flex items-center gap-2">
-        <a href="./index.html" class="btn">🏠 Back to site</a>
-        <button id="btnClearAll" class="btn">🧹 Clear ALL items</button>
-        <button id="btnImport" class="btn">📥 Import items from <b>shop.csv</b></button>
+        <a class="btn" href="./index.html">🏠 Back to site</a>
+        <button id="saveCfg" class="btn">💾 Save config</button>
+        <button id="reload" class="btn">🔄 Reload</button>
+        <button id="signOut" class="btn">🚪 Sign out</button>
       </div>
     </header>
 
-    <!-- CONFIG -->
-    <section class="card p-4">
-      <div class="flex items-center justify-between">
-        <h2 class="brand text-xl">Config</h2>
-        <div class="flex items-center gap-2">
-          <span id="statusDot" class="pill bg-slate-200 text-slate-700">Not connected</span>
-          <button id="btnSaveCfg" class="btn">💾 Save config</button>
-          <button id="btnSignOut" class="btn">🚪 Sign out</button>
-        </div>
-      </div>
-      <div class="grid grid-cols-1 md:grid-cols-3 gap-3 mt-3">
+    <!-- Config -->
+    <section class="card p-4 space-y-3">
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
         <div>
           <label class="text-xs text-slate-500">Shop ID</label>
-          <input id="shopId" class="input" placeholder="jjblossoms" value="jjblossoms"/>
+          <input id="shopId" class="input" value="jjblossoms" placeholder="jjblossoms" />
         </div>
         <div class="md:col-span-2">
           <label class="text-xs text-slate-500">Config JSON (paste your Firebase config object)</label>
-          <textarea id="cfgJson" class="input" rows="3" placeholder='{"apiKey":"...","authDomain":"...",...}'></textarea>
+          <textarea id="cfgJson" class="input" rows="3" placeholder='{"apiKey":"…","authDomain":"…","databaseURL":"…",…}'></textarea>
         </div>
       </div>
-      <p class="text-xs text-slate-500 mt-2">Tip: Enable <b>Authentication → Anonymous</b> and create <b>Realtime Database</b>. Basic rule:
-      <code>{"rules":{".read":true,"shops":{"$shop":{".write":"auth != null"}}}}</code></p>
+      <div class="text-sm">Status: <span id="status" class="font-semibold text-slate-700">Not connected</span></div>
+      <p class="text-xs text-slate-500">Enable <b>Authentication → Anonymous</b> and create a <b>Realtime Database</b>. Rule: <code>{"rules":{".read":true,"shops":{"$shop":{".write":"auth != null"}}}}</code></p>
     </section>
 
-    <!-- ITEMS -->
-    <section class="card p-4 space-y-3">
-      <div class="flex items-center justify-between">
-        <h2 class="brand text-xl">Items</h2>
-        <div class="flex items-center gap-2">
-          <input id="qItems" class="input" placeholder="Search items">
-          <select id="catItems" class="input"></select>
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+      <!-- Items -->
+      <section class="card p-4 space-y-3">
+        <div class="flex items-center justify-between">
+          <h2 class="brand text-xl">Items</h2>
+          <div class="flex items-center gap-2">
+            <button id="importCsv" class="btn">📥 Import items from <b>shop.csv</b></button>
+            <button id="clearAll" class="btn">🧹 Clear ALL</button>
+          </div>
         </div>
-      </div>
 
-      <!-- Quick add / update item -->
-      <div class="grid grid-cols-1 md:grid-cols-5 gap-2">
-        <input id="newName" class="input" placeholder="Item name">
-        <input id="newCat" class="input" placeholder="Category (e.g., DNA, Dungeon Frag)">
-        <input id="newPrice" class="input" placeholder="Sell price ($)">
-        <input id="newStock" class="input" placeholder="Stock (optional)">
-        <div class="flex gap-2">
-          <input id="newNotes" class="input" placeholder="Notes (optional)">
-          <button id="btnAddItem" class="btn">＋ Add / Update Item</button>
+        <!-- Quick add/update -->
+        <form id="addItem" class="grid grid-cols-1 md:grid-cols-5 gap-2">
+          <input class="input" id="itName" placeholder="Item name" required>
+          <input class="input" id="itCat" placeholder="Category" required>
+          <input class="input" id="itPrice" type="number" placeholder="Sell price" required>
+          <input class="input" id="itStock" type="number" placeholder="Stock (optional)">
+          <div class="flex gap-2">
+            <input class="input" id="itNotes" placeholder="Notes (optional)">
+            <button class="btn btn-primary" type="submit">➕ Add / Update</button>
+          </div>
+        </form>
+
+        <div class="overflow-auto rounded-2xl border">
+          <table class="min-w-full text-sm">
+            <thead class="bg-slate-50 sticky top-0"><tr class="text-left">
+              <th class="p-3">Name</th><th class="p-3">Category</th><th class="p-3">Sell</th><th class="p-3">Buy(85%)</th><th class="p-3">Stock</th><th class="p-3">Notes</th><th class="p-3">Actions</th>
+            </tr></thead>
+            <tbody id="rowsItems"></tbody>
+          </table>
         </div>
-      </div>
+      </section>
 
-      <div class="overflow-auto rounded-2xl border">
-        <table class="min-w-full text-sm">
-          <thead class="bg-slate-50 sticky top-0"><tr class="text-left">
-            <th class="p-3">Name</th><th class="p-3">Category</th><th class="p-3">Sell</th><th class="p-3">Buy(85%)</th><th class="p-3">Stock</th><th class="p-3">Notes</th><th class="p-3">Actions</th>
-          </tr></thead>
-          <tbody id="rowsItems"></tbody>
-        </table>
-      </div>
-    </section>
-
-    <!-- POKEMON -->
-    <section class="card p-4 space-y-3">
-      <div class="flex items-center justify-between">
-        <h2 class="brand text-xl">Pokémon For Sale</h2>
-        <div class="flex flex-wrap items-center gap-2">
-          <select id="owner" class="input">
+      <!-- Pokémon For Sale (simplified) -->
+      <section class="card p-4 space-y-3">
+        <div class="flex items-center justify-between">
+          <h2 class="brand text-xl">Pokémon For Sale</h2>
+        </div>
+        <form id="addPk" class="grid grid-cols-1 md:grid-cols-3 gap-2">
+          <select id="pkOwner" class="input" required>
             <option>Yerttty</option>
             <option>Jonfiin</option>
           </select>
-          <input id="pkName" class="input" placeholder="Nickname (optional)">
-          <input id="species" class="input" placeholder="Species">
-          <input id="level" class="input" placeholder="Level">
-          <input id="nature" class="input" placeholder="Nature">
-          <input id="tera" class="input" placeholder="Tera Type (optional)">
-          <input id="ball" class="input" placeholder="Caught Ball (optional)">
-          <input id="held" class="input" placeholder="Held Item (optional)">
-          <input id="ability" class="input" placeholder="Ability (optional)">
-          <input id="size" class="input" placeholder="Size (optional)">
-          <label class="flex items-center gap-2 text-sm"><input id="neutered" type="checkbox"> Neutered</label>
-          <input id="price" class="input" placeholder="Price">
-          <input id="notes" class="input" placeholder="Notes (IVs/EVs/Moves)">
-          <button id="btnAddPk" class="btn">＋ Add / Update Pokémon</button>
+          <input id="pkNickname" class="input" placeholder="Nickname (optional)">
+          <input id="pkSpecies" class="input" placeholder="Species" required>
+          <input id="pkLevel" class="input" type="number" min="1" placeholder="Level">
+          <input id="pkNature" class="input" placeholder="Nature">
+          <input id="pkPrice" class="input" type="number" min="0" placeholder="Price" required>
+          <input id="pkTera" class="input" placeholder="Tera Type (optional)">
+          <input id="pkNotes" class="input md:col-span-2" placeholder="Notes (Held, Ball, IV/EV summary, Moves)">
+          <label class="flex items-center gap-2 text-sm"><input id="pkShiny" type="checkbox"> Shiny</label>
+          <label class="flex items-center gap-2 text-sm"><input id="pkNeutered" type="checkbox"> Neutered</label>
+          <button class="btn btn-primary md:col-span-3" type="submit">➕ Add / Update Pokémon</button>
+        </form>
+        <div class="overflow-auto rounded-2xl border">
+          <table class="min-w-full text-sm">
+            <thead class="bg-slate-50 sticky top-0"><tr class="text-left">
+              <th class="p-3">Owner</th><th class="p-3">Species</th><th class="p-3">Lv.</th><th class="p-3">Nature</th><th class="p-3">Price</th><th class="p-3">Notes</th><th class="p-3">Actions</th>
+            </tr></thead>
+            <tbody id="rowsPk"></tbody>
+          </table>
         </div>
-      </div>
-      <div class="overflow-auto rounded-2xl border">
-        <table class="min-w-full text-sm">
-          <thead class="bg-slate-50 sticky top-0"><tr class="text-left">
-            <th class="p-3">Owner</th><th class="p-3">Species</th><th class="p-3">Lv.</th><th class="p-3">Nature</th><th class="p-3">Price</th><th class="p-3">Notes</th><th class="p-3">Actions</th>
-          </tr></thead>
-          <tbody id="rowsPk"></tbody>
-        </table>
-      </div>
-    </section>
+      </section>
+    </div>
+
+    <p class="text-xs text-slate-500">Changes sync instantly. Use inline edits or +/− to adjust stock.</p>
   </div>
 
   <script>
-    const BUY_RATE=0.85, CSV_FILE='shop.csv';
-    let app=null, db=null, auth=null, user=null, shop='jjblossoms';
-
-    // --- UI helpers
+    // -------- helpers --------
+    const BUY=0.85; let app, auth, db; let SHOP='jjblossoms';
     const $=(s)=>document.querySelector(s);
-    const normalize=(s)=>String(s||'').trim();
-    const money=(n)=>`$${Math.round(Number(n||0))}`;
-    const toast=(m)=>{alert(m)};
+    const jget=(k,def)=>{try{return JSON.parse(localStorage.getItem(k)||'null')??def}catch{return def}};
+    const jset=(k,v)=>localStorage.setItem(k,JSON.stringify(v));
+    const money=(n)=>'$'+(Math.round(Number(n||0)));
+    const safeKey=(s)=>String(s||'').replace(/[.#$\[\]\/]/g,'_'); // RTDB invalid chars
+    const cleanNum=(v)=> typeof v==='number'? v : Number(String(v||'').replace(/[^0-9.\-]/g,''))||0;
 
-    // --- Save config & init Firebase
-    $('#btnSaveCfg').addEventListener('click', async ()=>{
+    // Prefill config if empty
+    document.addEventListener('DOMContentLoaded',()=>{
+      const pre={
+        apiKey: "AIzaSyAfvM_nSppUkYoRa1Bes2NuE-Bs8vTwcIE",
+        authDomain: "jjblossom-35083.firebaseapp.com",
+        databaseURL: "https://jjblossom-35083-default-rtdb.firebaseio.com",
+        projectId: "jjblossom-35083",
+        storageBucket: "jjblossom-35083.firebasestorage.app",
+        messagingSenderId: "480122553743",
+        appId: "1:480122553743:web:04bf017d5e16f28fd477fa",
+        measurementId: "G-GVCG3PTNVP"
+      };
+      if(!$('#cfgJson').value) $('#cfgJson').value=JSON.stringify(pre);
+      const sid=jget('jj_shop'); if(sid) $('#shopId').value=sid;
+      const cfg=jget('jj_cfg'); if(cfg) $('#cfgJson').value=JSON.stringify(cfg);
+    });
+
+    async function connect(){
+      SHOP=$('#shopId').value.trim()||'jjblossoms';
+      const cfgText=$('#cfgJson').value.trim();
+      let cfg; try{ cfg=JSON.parse(cfgText); }catch{ alert('Config JSON is invalid'); return; }
+      jset('jj_shop', SHOP); jset('jj_cfg', cfg);
       try{
-        shop = normalize($('#shopId').value)||'jjblossoms';
-        const cfgTxt=$('#cfgJson').value.trim();
-        const cfg = cfgTxt ? JSON.parse(cfgTxt) : null;
-        if(!cfg) return alert('Paste your Firebase config JSON.');
-        localStorage.setItem('jj_cfg', cfgTxt);
-        localStorage.setItem('jj_shop', shop);
-        app = firebase.initializeApp(cfg);
-        auth = firebase.auth();
-        db   = firebase.database();
-        await auth.signInAnonymously();
-        user = auth.currentUser;
-        $('#statusDot').textContent='Connected';
-        $('#statusDot').className='pill bg-green-100 text-green-800';
-        loadAll();
-      }catch(e){ console.error(e); alert('Config invalid: '+e.message); }
-    });
-
-    // Restore saved cfg
-    (function(){
-      const cfg=localStorage.getItem('jj_cfg'); const sid=localStorage.getItem('jj_shop');
-      if(sid) $('#shopId').value=sid;
-      if(cfg) $('#cfgJson').value=cfg;
-    })();
-
-    $('#btnSignOut').addEventListener('click', async ()=>{ try{ await auth?.signOut(); $('#statusDot').textContent='Signed out'; $('#statusDot').className='pill bg-slate-200 text-slate-700'; }catch{} });
-
-    // ---- CSV parsing (robust headers)
-    const cleanNum=(v)=> typeof v==='number'? v: (typeof v==='string'? Number(v.replace(/[^0-9.\-]/g,'')): NaN);
-    const lower=(h)=>String(h||'').trim().toLowerCase().replace(/\s+/g,' ');
-    function findIdx(headers, wanted, exclude=[]) {
-      const H=headers.map(lower), bad=exclude.map(lower);
-      for(const key of wanted){ const i=H.findIndex(h=>h===key||h.includes(key)); if(i!==-1){ const t=H[i]; if(bad.some(b=>t.includes(b))) continue; return i; } }
-      return -1;
-    }
-    function mapHeaders(headers){
-      const name = findIdx(headers,["name","item name","item","title"]);
-      const cat  = findIdx(headers,["category","cat","type","group"]);
-      const price= findIdx(headers,["sell price","sell_price","sellprice","our price","price","listed price","amount","sell"],["buy"]);
-      const stock= findIdx(headers,["stock","qty","quantity","amount in stock"]);
-      const notes= findIdx(headers,["notes","desc","description","note"]);
-      return {name,cat,price,stock,notes};
+        app=firebase.apps.length? firebase.app() : firebase.initializeApp(cfg);
+      }catch{ app=firebase.app(); }
+      auth=firebase.auth(); await auth.signInAnonymously();
+      db=firebase.database();
+      $('#status').textContent='Connected';
+      await loadAll();
     }
 
-    function safeKey(s){
-      // Firebase RTDB keys cannot contain . # $ [ ] /
-      return String(s||'').replace(/[.#$\[\]/]/g,'_');
-    }
+    // Buttons
+    $('#saveCfg').addEventListener('click', connect);
+    $('#reload').addEventListener('click', loadAll);
+    $('#signOut').addEventListener('click', async ()=>{ try{ await auth?.signOut(); $('#status').textContent='Signed out'; }catch{} });
 
-    function rowsToItems(rows){
-      const out=[]; const map=mapHeaders(rows[0]||[]);
-      for(let r=1;r<rows.length;r++){
-        const row=rows[r]||[];
-        const name=normalize(row[map.name]||''); if(!name) continue;
-        const category=normalize(row[map.cat]||'');
-        const price=cleanNum(row[map.price]);
-        const stockRaw=row[map.stock];
-        const hasStock=!(stockRaw===undefined||stockRaw===null||String(stockRaw).trim()==='');
-        const stock=hasStock? Number(stockRaw): '';
-        const notes=normalize(row[map.notes]||'');
-        const buy=Math.round((Number(price)||0)*BUY_RATE);
-        const id=(name+'|'+category+'|'+r).toLowerCase(); // unique per row
-        out.push({id,name,category,price:Math.round(price||0),buy,stock: hasStock && Number.isFinite(stock)?stock:'',notes});
-      }
-      return out;
-    }
-
-    async function importCSVtoDB(){
-      if(!confirm('Import from CSV will overwrite items with the same name+category. Continue?')){return;}
-      try{
-        const res=await fetch(CSV_FILE,{cache:'no-store'}); if(!res.ok) return alert('shop.csv not found.');
-        const text=await res.text();
-        const wb=XLSX.read(text,{type:'string'}); const ws=wb.Sheets[wb.SheetNames[0]];
-        const rows=XLSX.utils.sheet_to_json(ws,{header:1,raw:true}); if(!rows.length) return alert('CSV empty');
-        const items=rowsToItems(rows);
-        const base=`shops/${shop}/items`;
-        const updates={}; items.forEach(it=>{ const key=safeKey(it.id||it.key||''); updates[`${base}/${key}`]=Object.assign({},it,{key}); });
-        await db.ref().update(updates);
-        alert(`Imported ${items.length} items to Firebase ✓`);
-        loadItems();
-      }catch(e){ console.error(e); alert('Import failed: '+e.message); }
-    }
-
-    $('#btnImport').addEventListener('click', importCSVtoDB);
-
-    async function clearAll(){
-      if(!confirm('Delete ALL items under this shop?')) return;
-      await db.ref(`shops/${shop}/items`).remove();
-      alert('All items cleared');
-      loadItems();
-    }
-    $('#btnClearAll').addEventListener('click', clearAll);
-
-    // Quick add / update item handler
-    $('#btnAddItem').addEventListener('click', async ()=>{
-      const name=normalize($('#newName').value);
-      if(!name) return alert('Enter item name');
-      const category=normalize($('#newCat').value);
-      let price=Math.round(Number($('#newPrice').value)||0);
-      const buy=Math.round(price*BUY_RATE);
-      const stockRaw=normalize($('#newStock').value);
-      const hasStock=stockRaw!==''; const stock=hasStock? Number(stockRaw)||0: '';
-      const notes=normalize($('#newNotes').value);
-      const id=(name+'|'+category+'|'+Date.now()).toLowerCase();
-      const key=safeKey(id);
-      await db.ref(`shops/${shop}/items/${key}`).set({key,id,name,category,price,buy,stock,notes});
-      $('#newName').value=$('#newCat').value=$('#newPrice').value=$('#newStock').value=$('#newNotes').value='';
-      loadItems();
-    });
-
-    // Quick add item handler
-    document.getElementById('btnAddItem')?.addEventListener('click', async ()=>{
-      const name=normalize($('#newName').value); if(!name) return alert('Item name required');
-      const category=normalize($('#newCat').value);
-      const price=Math.round(Number($('#newPrice').value)||0);
-      const stockRaw=$('#newStock').value; const hasStock=String(stockRaw).trim()!==''; const stock=hasStock? Number(stockRaw)||0:'';
-      const notes=normalize($('#newNotes').value);
-      const id=(name+'|'+category).toLowerCase();
-      const key=safeKey(id);
-      const buy=Math.round(price*BUY_RATE);
-      await db.ref(`shops/${shop}/items/${key}`).update({key,id,name,category,price,buy,stock,notes});
-      ['newName','newCat','newPrice','newStock','newNotes'].forEach(id=> $('#'+id).value='');
-      loadItems();
-    });
-
-    // ---- Items UI
-    function fillCats(list){
-      const sel=$('#catItems'); const cur=sel.value; const set=new Set(list.map(i=>i.category).filter(Boolean));
-      sel.innerHTML=''; sel.add(new Option('All','All'));
-      [...set].sort((a,b)=>a.localeCompare(b)).forEach(c=> sel.add(new Option(c,c)));
-      if(list.some(i=>!i.category)) sel.add(new Option('Other','Other'));
-      sel.value=[...sel.options].some(o=>o.value===cur)?cur:'All';
+    // -------- items --------
+    async function loadItems(){
+      const snap=await db.ref(`shops/${SHOP}/items`).get();
+      const list=snap.exists()? Object.values(snap.val()) : [];
+      list.sort((a,b)=> (a.category||'').localeCompare(b.category||'') || (a.name||'').localeCompare(b.name||''));
+      renderItems(list);
     }
 
     function renderItems(list){
-      const q=$('#qItems').value.toLowerCase(); const cat=$('#catItems').value||'All';
       const tb=$('#rowsItems'); tb.innerHTML='';
-      const data=list.filter(it=> (cat==='All'||it.category===cat||(cat==='Other'&&!it.category)) && ((it.name||'').toLowerCase().includes(q) || (it.category||'').toLowerCase().includes(q) || (it.notes||'').toLowerCase().includes(q)) );
-      data.forEach(it=>{
-        const tr=document.createElement('tr'); tr.innerHTML=`
-          <td class="p-2">${it.name}</td>
-          <td class="p-2">${it.category||''}</td>
-          <td class=\"p-2\"><input class=\"input\" style=\"max-width:8rem\" data-act=\"price\" data-id=\"${it.key||it.id}\" value=\"${Math.round(it.price||0)}\"></td>
-          <td class="p-2">${money(it.buy)}</td>
-          <td class="p-2">
-            <button class="btn" data-act="sub" data-id="${it.key||it.id}">−</button>
-            <span class="mx-2 align-middle">${it.stock===''?'':it.stock}</span>
-            <button class="btn" data-act="add" data-id="${it.key||it.id}">＋</button>
-          </td>
-          <td class="p-2"><input class="input" data-act="note" data-id="${it.key||it.id}" value="${it.notes||''}"></td>
-          <td class="p-2">
-            <button class="btn" data-act="del" data-id="${it.key||it.id}">Delete</button>
-          </td>`;
-        tb.appendChild(tr);
-      });
-      tb.querySelectorAll('button[data-act]').forEach(b=> b.addEventListener('click', onItemAction));
-      tb.querySelectorAll('input[data-act="note"]').forEach(i=> i.addEventListener('change', onNoteChange));
-      tb.querySelectorAll('input[data-act="price"]').forEach(i=> i.addEventListener('change', onPriceChange));
-    }
-
-    async function onItemAction(e){
-      const id=e.currentTarget.dataset.id; const act=e.currentTarget.dataset.act;
-      const ref=db.ref(`shops/${shop}/items/${id}`);
-      const snap=await ref.get(); if(!snap.exists()) return;
-      const it=snap.val(); let stock=it.stock===''?0:Number(it.stock)||0;
-      if(act==='add') stock++; if(act==='sub') stock=Math.max(0, stock-1); if(act==='del'){ if(!confirm('Delete item?')) return; await ref.remove(); return loadItems();}
-      await ref.update({stock}); loadItems();
-    }
-    async function onNoteChange(e){ const id=e.currentTarget.dataset.id; const notes=e.currentTarget.value; await db.ref(`shops/${shop}/items/${id}`).update({notes}); }
-
-    async function onPriceChange(e){
-      const id=e.currentTarget.dataset.id;
-      let price=Math.round(Number(e.currentTarget.value)||0);
-      const buy=Math.round(price*BUY_RATE);
-      await db.ref(`shops/${shop}/items/${id}`).update({price,buy});
-      loadItems();
-    }/items/${id}`).update({notes}); }
-    async function onPriceChange(e){ const id=e.currentTarget.dataset.id; const price=Math.round(Number(e.currentTarget.value)||0); const buy=Math.round(price*BUY_RATE); await db.ref(`shops/${shop}/items/${id}`).update({price,buy}); loadItems(); }/items/${id}`).update({notes}); }
-
-    function onItems(list){ fillCats(list); renderItems(list); }
-
-    // ---- Pokémon
-    async function addPokemon(){
-      const owner=$('#owner').value,
-            nickname=normalize($('#pkName').value),
-            species=normalize($('#species').value),
-            level=normalize($('#level').value),
-            nature=normalize($('#nature').value),
-            tera=normalize($('#tera').value),
-            ball=normalize($('#ball').value),
-            held=normalize($('#held').value),
-            ability=normalize($('#ability').value),
-            size=normalize($('#size').value),
-            neutered=$('#neutered').checked,
-            price=Number($('#price').value)||0,
-            notes=normalize($('#notes').value);
-      if(!species) return alert('Enter species');
-      const id=(owner+'|'+species+'|'+Date.now()).toLowerCase();
-      await db.ref(`shops/${shop}/pokemon/${id}`).set({id,owner,species,nickname,level,nature,tera,ball,held,ability,size,neutered,price:Math.round(price),notes,ts:Date.now()});
-      ['pkName','species','level','nature','tera','ball','held','ability','size','price','notes'].forEach(i=> $('#'+i).value='');
-      $('#neutered').checked=false;
-      loadPokemon();
-    }/pokemon/${id}`).set({id,owner,species,level,nature,price:Math.round(price),notes,ts:Date.now()});
-      $('#species').value=$('#level').value=$('#nature').value=$('#price').value=$('#notes').value='';
-      loadPokemon();
-    }
-    $('#btnAddPk').addEventListener('click', addPokemon);
-
-    function renderPk(list){
-      const tb=$('#rowsPk'); tb.innerHTML='';
-      list.forEach(p=>{
+      for(const it of list){
         const tr=document.createElement('tr');
-        const flags=[p.shiny?'✨ Shiny':null, p.neutered?'Neutered':null].filter(Boolean).join(' · ');
-        const extra=[p.tera?`Tera: ${p.tera}`:null,p.ball?`Ball: ${p.ball}`:null,p.held?`Held: ${p.held}`:null,p.ability?`Ability: ${p.ability}`:null,p.size?`Size: ${p.size}`:null].filter(Boolean).join(' · ');
-        tr.innerHTML=`<td class="p-2">${p.owner}</td>
-          <td class="p-2">${p.nickname?`${p.nickname} (${p.species})`:p.species}${flags?` — ${flags}`:''}</td>
-          <td class="p-2">${p.level||''}</td>
-          <td class="p-2">${p.nature||''}</td>
-          <td class="p-2">${money(p.price)}</td>
-          <td class="p-2">${[extra,p.notes||''].filter(Boolean).join(' | ')}</td>
-          <td class="p-2"><button class="btn" data-pkdel="${p.id}">Delete</button></td>`;
+        tr.innerHTML=`<td class="p-2">${it.name}</td>
+          <td class="p-2">${it.category||''}</td>
+          <td class="p-2"><input class="input w-28" data-f="price" data-id="${it.id}" value="${Math.round(it.price||it.sellPrice||0)}"></td>
+          <td class="p-2">${money((it.price??it.sellPrice||0)*BUY)}</td>
+          <td class="p-2 flex items-center gap-2"><button class="btn" data-f="dec" data-id="${it.id}">−</button><input class="input w-20" data-f="stock" data-id="${it.id}" value="${it.stock===''?'':it.stock}"><button class="btn" data-f="inc" data-id="${it.id}">+</button></td>
+          <td class="p-2"><input class="input" data-f="notes" data-id="${it.id}" value="${it.notes||''}"></td>
+          <td class="p-2"><button class="btn" data-f="del" data-id="${it.id}">Delete</button></td>`;
         tb.appendChild(tr);
-      });
-      tb.querySelectorAll('button[data-pkdel]').forEach(b=> b.addEventListener('click', async (e)=>{ const id=e.currentTarget.dataset.pkdel; if(!confirm('Delete Pokémon?')) return; await db.ref(`shops/${shop}/pokemon/${id}`).remove(); loadPokemon(); }));
-    }</td><td class="p-2">${p.species}</td><td class="p-2">${p.level||''}</td><td class="p-2">${p.nature||''}</td><td class="p-2">${money(p.price)}</td><td class="p-2">${p.notes||''}</td><td class="p-2"><button class="btn" data-pkdel="${p.id}">Delete</button></td>`;
-        tb.appendChild(tr);
-      });
-      tb.querySelectorAll('button[data-pkdel]').forEach(b=> b.addEventListener('click', async (e)=>{ const id=e.currentTarget.dataset.pkdel; if(!confirm('Delete Pokémon?')) return; await db.ref(`shops/${shop}/pokemon/${id}`).remove(); loadPokemon(); }));
+      }
+      tb.querySelectorAll('[data-f]').forEach(el=> el.addEventListener('click', onItemClick));
+      tb.querySelectorAll('input[data-f]').forEach(el=> el.addEventListener('change', onItemChange));
     }
 
-    async function loadItems(){
-      const snap=await db.ref(`shops/${shop}/items`).get(); const list=snap.exists()? Object.values(snap.val()) : [];
-      list.sort((a,b)=> (a.category||'').localeCompare(b.category||'') || String(a.name||'').localeCompare(String(b.name||'')) );
-      onItems(list);
+    async function onItemClick(e){
+      const btn=e.currentTarget; const act=btn.dataset.f; const id=btn.dataset.id; const ref=db.ref(`shops/${SHOP}/items/${id}`);
+      if(act==='del'){ if(!confirm('Delete item?')) return; await ref.remove(); return loadItems(); }
+      const snap=await ref.get(); if(!snap.exists()) return; let it=snap.val(); let stock=it.stock===''?0:Number(it.stock)||0; if(act==='inc') stock++; if(act==='dec') stock=Math.max(0,stock-1); await ref.update({stock}); loadItems();
     }
-    async function loadPokemon(){
-      const snap=await db.ref(`shops/${shop}/pokemon`).get(); const list=snap.exists()? Object.values(snap.val()) : [];
-      list.sort((a,b)=> (a.owner||'').localeCompare(b.owner||'') || (a.species||'').localeCompare(b.species||''));
-      renderPk(list);
-    }
-    async function loadAll(){ await Promise.all([loadItems(), loadPokemon()]); }
 
-    $('#qItems').addEventListener('input', ()=>{ loadItems(); });
-    $('#catItems').addEventListener('change', ()=>{ loadItems(); });
+    async function onItemChange(e){
+      const el=e.currentTarget; const field=el.dataset.f; const id=el.dataset.id; const ref=db.ref(`shops/${SHOP}/items/${id}`);
+      let val=el.value; if(field==='price') val=Math.round(Number(val)||0); if(field==='stock') val=val===''?'':Number(val)||0; await ref.update({ [field]: val }); loadItems();
+    }
+
+    // Add / update from form
+    document.getElementById('addItem').addEventListener('submit', async (e)=>{
+      e.preventDefault(); const name=$('#itName').value.trim(); const category=$('#itCat').value.trim(); const price=Math.round(Number($('#itPrice').value)||0); const stockRaw=$('#itStock').value; const stock=String(stockRaw).trim()===''?'':Number(stockRaw)||0; const notes=$('#itNotes').value.trim(); const id=safeKey((name+'|'+category).toLowerCase()); await db.ref(`shops/${SHOP}/items/${id}`).update({id,name,category,price,stock,notes}); e.target.reset(); loadItems();
+    });
+
+    // Import from CSV
+    document.getElementById('importCsv').addEventListener('click', async ()=>{
+      try{
+        const r=await fetch('shop.csv',{cache:'no-store'}); if(!r.ok) return alert('shop.csv not found in the repo root');
+        const txt=await r.text(); const wb=XLSX.read(txt,{type:'string'}); const ws=wb.Sheets[wb.SheetNames[0]]; const rows=XLSX.utils.sheet_to_json(ws,{header:1,raw:true}); if(!rows.length) return alert('CSV empty');
+        const H=(rows[0]||[]).map(h=>String(h||'').toLowerCase());
+        const find=(keys,exclude=[])=>{ for(const k of keys){ const i=H.findIndex(h=>h===k||h.includes(k)); if(i!==-1){ const t=H[i]; if(exclude.some(b=>t.includes(b))) continue; return i; } } return -1; };
+        const iName=find(['name','item name','item','title']); const iCat=find(['category','cat','type','group']); const iPrice=find(['sell price','sell_price','sellprice','our price','price','listed price','amount','sell'],['buy']); const iStock=find(['stock','qty','quantity','amount in stock']); const iNotes=find(['notes','desc','description','note']);
+        const updates={}; let n=0; for(let rI=1;rI<rows.length;rI++){ const row=rows[rI]||[]; const name=String(row[iName]||'').trim(); if(!name) continue; const cat=String(row[iCat]||'').trim(); const price=cleanNum(row[iPrice]); const stockRaw=row[iStock]; const stock=(stockRaw===undefined||stockRaw===null||String(stockRaw).trim()==='')?'':Number(stockRaw)||0; const notes=String(row[iNotes]||'').trim(); const id=safeKey((name+'|'+cat).toLowerCase()); updates[`shops/${SHOP}/items/${id}`]={id,name,category:cat,price:Math.round(price||0),stock,notes}; n++; }
+        await db.ref().update(updates); alert(`Imported ${n} items ✓`); loadItems();
+      }catch(e){ console.error(e); alert('Import failed: '+e.message); }
+    });
+
+    document.getElementById('clearAll').addEventListener('click', async ()=>{ if(!confirm('Delete ALL items?')) return; await db.ref(`shops/${SHOP}/items`).remove(); loadItems(); });
+
+    // -------- pokemon --------
+    async function loadPk(){ const snap=await db.ref(`shops/${SHOP}/pokemon`).get(); const list=snap.exists()? Object.values(snap.val()) : []; list.sort((a,b)=> (a.owner||'').localeCompare(b.owner||'') || (a.species||'').localeCompare(b.species||'')); renderPk(list); }
+
+    function renderPk(list){ const tb=$('#rowsPk'); tb.innerHTML=''; for(const p of list){ const tr=document.createElement('tr'); const flag=[p.shiny?'✨ Shiny':null,p.neutered?'Neutered':null].filter(Boolean).join(' · '); tr.innerHTML=`<td class="p-2">${p.owner}</td><td class="p-2">${p.nickname?`${p.nickname} (${p.species})`:p.species}${flag?` — ${flag}`:''}</td><td class="p-2">${p.level||''}</td><td class="p-2">${p.nature||''}</td><td class="p-2">${money(p.price)}</td><td class="p-2">${p.notes||''}${p.tera?` · Tera: ${p.tera}`:''}</td><td class="p-2"><button class="btn" data-delpk="${p.id}">Delete</button></td>`; tb.appendChild(tr);} tb.querySelectorAll('button[data-delpk]').forEach(b=> b.addEventListener('click', async (e)=>{ const id=e.currentTarget.dataset.delpk; if(!confirm('Delete Pokémon?')) return; await db.ref(`shops/${SHOP}/pokemon/${id}`).remove(); loadPk(); })); }
+
+    document.getElementById('addPk').addEventListener('submit', async (e)=>{ e.preventDefault(); const owner=$('#pkOwner').value; const nickname=$('#pkNickname').value.trim(); const species=$('#pkSpecies').value.trim(); if(!species) return alert('Enter species'); const level=Number($('#pkLevel').value||0); const nature=$('#pkNature').value.trim(); const price=Math.round(Number($('#pkPrice').value)||0); const notes=$('#pkNotes').value.trim(); const tera=$('#pkTera').value.trim(); const shiny=$('#pkShiny').checked; const neutered=$('#pkNeutered').checked; const id=safeKey((owner+'|'+species+'|'+Date.now()).toLowerCase()); await db.ref(`shops/${SHOP}/pokemon/${id}`).set({id,owner,nickname,species,level,nature,price,notes,tera,shiny,neutered,ts:Date.now()}); e.target.reset(); loadPk(); });
+
+    // Load on open if config saved
+    (async()=>{ const saved=jget('jj_cfg'); if(saved){ await connect(); } })();
+
+    async function loadAll(){ await Promise.all([loadItems(), loadPk()]); }
   </script>
 </body>
 </html>
