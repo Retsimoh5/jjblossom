@@ -43,12 +43,8 @@
           <p class="text-slate-600 mt-2 text-sm">Creators: <span class="font-semibold">Yerttty</span> & <span class="font-semibold">Jonfiin</span></p>
         </div>
         <div class="flex flex-wrap items-center gap-2">
-          <label class="btn btn-outline cursor-pointer">
-            <input id="fileInput" type="file" accept=".xlsx,.xls,.csv" class="hidden" />
-            📥 Upload Excel/CSV
-          </label>
+          <!-- Upload/Export removed by request -->
           <button id="reloadBtn" class="btn btn-outline">🔄 Reload data</button>
-          <button id="exportBtn" class="btn btn-primary">⬇️ Export CSV</button>
         </div>
       </div>
       <div class="mt-5 card p-4">
@@ -73,7 +69,7 @@
           <button id="resetFilters" class="btn btn-ghost">Reset</button>
         </div>
       </div>
-      <p class="text-xs text-slate-500 mt-2">Tip: Put your <code>shop.xlsx</code> (or <code>shop.csv</code>) next to this page in your GitHub Pages repo. The page will auto-load it. Or click “Upload Excel/CSV”.</p>
+      <p class="text-xs text-slate-500 mt-2">Tip: Put your <code>shop.xlsx</code> (or <code>shop.csv</code>) next to this page in your GitHub Pages repo. The page will auto-load it.</p>
     </div>
 
     <!-- Results summary -->
@@ -268,36 +264,7 @@
       return false;
     }
 
-    function exportCSV(){
-      const header = ["name","category","price","buy","stock","notes"];
-      const lines = [header.join(',')];
-      for (const it of VIEW_ITEMS){
-        const row = [it.name, it.category||'', it.price, it.buy, (it.stock==='')? '': it.stock, it.notes||''];
-        const esc = row.map(v => {
-          const s = String(v??'');
-          return (s.includes(',')||s.includes('\n')||s.includes('"'))? '"'+s.replaceAll('"','""')+'"' : s;
-        });
-        lines.push(esc.join(','));
-      }
-      const blob = new Blob([lines.join('\n')], {type:'text/csv;charset=utf-8;'});
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a'); a.href=url; a.download='jjblossoms_export.csv'; document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
-    }
-
     // ------- Wire up UI -------
-    el('#fileInput').addEventListener('change', async (e) => {
-      const f = e.target.files[0]; if (!f) return;
-      if (f.name.endsWith('.csv')){
-        const txt = await f.text();
-        const wb = XLSX.read(txt, { type:'string' });
-        loadFromWorkbook(wb);
-      } else {
-        const ab = await f.arrayBuffer();
-        const wb = XLSX.read(ab, { type:'array' });
-        loadFromWorkbook(wb);
-      }
-    });
-
     el('#searchInput').addEventListener('input', render);
     el('#categorySelect').addEventListener('change', render);
     el('#resetFilters').addEventListener('click', () => {
@@ -306,7 +273,6 @@
       render();
     });
 
-    el('#exportBtn').addEventListener('click', exportCSV);
     el('#reloadBtn').addEventListener('click', tryAutoFetch);
 
     // Auto-load if files exist in same folder
