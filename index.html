@@ -7,282 +7,200 @@
   <meta name="theme-color" content="#fce7f3"/>
   <script src="https://cdn.tailwindcss.com"></script>
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;700;900&family=Cinzel:wght@700&display=swap" rel="stylesheet">
-  <style>
-    :root{ --wave:#fde2e8 }
-    .brand{ font-family:'Cinzel','Noto Sans JP',system-ui,Segoe UI,Roboto,Helvetica,Arial }
-    .card{ border:1px solid #f1cbd6; border-radius:1rem; background:#fff }
-    .btn{ display:inline-flex; align-items:center; gap:.5rem; padding:.45rem .9rem; border-radius:.75rem; border:1px solid #d1d5db; background:#fff }
-    .btn-ghost{ background:transparent; border-color:#e5e7eb }
-    .dropdown{ position:relative }
-    .menu{ position:absolute; top:100%; left:0; min-width:12rem; background:#fff; border:1px solid #e2e8f0; border-radius:.75rem; box-shadow:0 10px 30px rgba(0,0,0,.08); z-index:50; }
-    .menu a{ display:block; padding:.5rem .75rem; }
-    .menu a:hover{ background:#f8fafc }
-    .header-wave{ background:linear-gradient(180deg,#ffeaf1,transparent 50%), radial-gradient(120% 50% at 50% 0,var(--wave) 50%,transparent 51%) }
-  </style>
-</head>
-<body class="bg-pink-50/40">
-  <header class="header-wave">
-    <div class="max-w-6xl mx-auto pt-6 px-3">
-      <img src="./Header.jpg" alt="JJBlossoms Header" class="w-full h-40 object-cover rounded-2xl border border-pink-200 shadow-sm">
-      <div class="mt-2 flex items-center gap-3 flex-wrap">
-        <h1 class="brand text-2xl sm:text-3xl">🌸 JJ<strong>BLOSSOMS</strong> <span class="text-sm sm:text-base align-middle">SHOP</span></h1>
-
-        <div class="dropdown">
-          <button id="pkBtn" class="btn">🧬 Pokémon For <span class="hidden sm:inline">Sale</span> ▾</button>
-          <div id="pkMenu" class="menu hidden">
-            <a href="#" data-owner="Yerttty">Yerttty</a>
-            <a href="#" data-owner="Jonfiin">Jonfiin</a>
-          </div>
-        </div>
-
-        <a id="homeBtn" href="./index.html" class="btn">🏠 Home</a>
-
-        <p class="text-slate-600 text-sm flex-1">
-          ようこそ— Welcome! Where deals bloom and <b>Mewtwo</b> even shops here ✨
-          <span class="block text-xs">Creators: Yerttty & Jonfiin</span>
-        </p>
-
-        <div class="ml-auto flex items-center gap-2">
-          <button id="reloadBtn" class="btn">🔄 Reload data</button>
-          <button id="reqBtn" class="btn">🎏 Requests</button>
-        </div>
-      </div>
-    </div>
-  </header>
-
-  <main class="max-w-6xl mx-auto p-3 sm:p-4">
-    <p class="text-xs sm:text-sm text-slate-600 mb-3">
-      <span id="sourceTag" class="font-medium">Data source: CSV</span> — Buy price = 85% of item price (rounded).
-    </p>
-
-    <div class="card p-3 sm:p-4 mb-4">
-      <div class="flex flex-col sm:flex-row gap-3 sm:items-end">
-        <div class="flex-1">
-          <label class="text-xs text-slate-500 block">Search</label>
-          <input id="q" class="w-full border rounded-lg px-3 py-2" placeholder="Search items, categories...">
-        </div>
-        <div>
-          <label class="text-xs text-slate-500 block">Category</label>
-          <select id="cat" class="border rounded-lg px-3 py-2"></select>
-        </div>
-        <button id="resetBtn" class="btn">Reset</button>
-      </div>
-    </div>
-
-    <div id="grid" class="space-y-8"></div>
-
-    <p class="mt-10 text-center text-xs text-slate-500">🌸 JJBlossoms — Where Mewtwo shops for deals</p>
-  </main>
-
-  <!-- Requests modal -->
-  <div id="reqModal" class="hidden fixed inset-0 z-40 bg-black/40 items-center justify-center">
-    <div class="bg-white w-[min(94vw,640px)] rounded-xl shadow-xl p-4">
-      <div class="flex items-center justify-between">
-        <h3 class="brand text-lg">Requests</h3>
-        <button id="reqClose" class="btn">✖</button>
-      </div>
-      <div id="reqBody" class="mt-3 text-sm text-slate-700"></div>
-    </div>
-  </div>
-
-  <script>
-    // ---- Settings -----------------------------------------------------------
-    const BUY_RATE = 0.85;
-    const CSV_FILE = 'shop.csv';
-    const LS_KEY = 'jjb_admin_cfg_v2'; // where admin saved the Firebase config
-
-    // ---- State --------------------------------------------------------------
-    let useFirebase = false;
-    let db = null, refItems = null, refPk = null;
-    let items = [];
-    let pokemon = [];
-    const $ = (s)=>document.querySelector(s);
-
-    // ---- Helpers ------------------------------------------------------------
-    const cleanNum = (v)=> typeof v==='number'? v : Number(String(v||'').replace(/[^0-9.-]/g,''));
-    const whole = (n)=> Math.round(Number(n||0));
-    const title = (s)=> (s||'').replace(/\b\w/g, m => m.toUpperCase());
-
-    function readAdminConfig(){
-      try{
-        const raw = localStorage.getItem(LS_KEY);
-        if(!raw) return null;
-        const parsed = JSON.parse(raw);
-        if(parsed?.cfg && parsed?.shopId) return parsed;
-      }catch(_) {}
-      return null;
-    }
-
-    function setSourceTag(txt){ $('#sourceTag').textContent = 'Data source: ' + txt; }
-
-    // ---- Rendering ----------------------------------------------------------
-    function fillCats(){
-      const sel = $('#cat');
-      const cur = sel.value;
-      const set = new Set(items.map(i=>i.category).filter(Boolean));
-      sel.innerHTML = '';
-      sel.add(new Option('All','All'));
-      [...set].sort((a,b)=>a.localeCompare(b)).forEach(c=> sel.add(new Option(c,c)));
-      if(items.some(i=>!i.category)) sel.add(new Option('Other','Other'));
-      sel.value = [...sel.options].some(o=>o.value===cur) ? cur : 'All';
-    }
-
-    function render(){
-      const q = $('#q').value.toLowerCase();
-      const cat = $('#cat').value || 'All';
-      const grid = $('#grid');
-      grid.innerHTML = '';
-      const groups = {};
-      for(const it of items){
-        const inCat = cat==='All' || it.category===cat || (cat==='Other' && !it.category);
-        const inQ = (it.name||'').toLowerCase().includes(q) || (it.category||'').toLowerCase().includes(q) || (it.notes||'').toLowerCase().includes(q);
-        if(!inCat || !inQ) continue;
-        const g = it.category || 'Other';
-        (groups[g] ||= []).push(it);
-      }
-      const cats = Object.keys(groups).sort((a,b)=>a.localeCompare(b));
-      for(const c of cats){
-        const section = document.createElement('section');
-        section.innerHTML = `<h3 class="brand text-xl mb-2 flex items-center gap-2">
-            <span>🧭 ${c}</span>
-            <span class="ml-auto text-xs text-slate-400">${groups[c].length} items</span>
-          </h3>`;
-        const wrap = document.createElement('div');
-        wrap.className = 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3';
-        for(const it of groups[c]){
-          const card = document.createElement('div');
-          const sell = whole(it.sellPrice ?? it.price ?? 0);
-          const buy = whole((it.sellPrice ?? it.price ?? 0) * BUY_RATE);
-          card.className = 'card p-3';
-          card.innerHTML = `
-            <div class="font-semibold">${it.name||''}</div>
-            <div class="mt-2 flex items-center justify-between text-xs">
-              <div class="rounded-lg px-2 py-1 bg-pink-50 border border-pink-100">
-                Our Price<br><span class="font-bold">$${sell}</span>
-              </div>
-              <div class="rounded-lg px-2 py-1 bg-pink-50 border border-pink-100">
-                We Buy For (85%)<br><span class="font-bold">$${buy}</span>
-              </div>
-            </div>
-          `;
-          wrap.appendChild(card);
-        }
-        section.appendChild(wrap);
-        grid.appendChild(section);
-      }
-    }
-
-    // ---- CSV loader ---------------------------------------------------------
-    async function loadFromCsv(){
-      setSourceTag('CSV');
-      const res = await fetch(CSV_FILE, {cache:'no-store'});
-      if(!res.ok){ items = []; render(); return; }
-      const text = await res.text();
-      // Parse CSV with simple splitter (supports commas in numbers if quoted not needed here)
-      // Use XLSX for robust parsing:
-      const wb = XLSX.read(text, {type:'string'});
-      const ws = wb.Sheets[wb.SheetNames[0]];
-      const rows = XLSX.utils.sheet_to_json(ws, {header:1, raw:true});
-      if(!rows.length){ items = []; render(); return; }
-      const H = rows[0].map(h => String(h||'').toLowerCase());
-      const idxName = H.findIndex(h=> h.includes('name') || h==='item' || h==='title');
-      const idxCat  = H.findIndex(h=> h.includes('cat') || h.includes('group') || h.includes('type'));
-      const idxPrice= H.findIndex(h=> (h.includes('sell_price')||h.includes('sell price')||h==='price'||h.includes('price')||h.includes('sell')) && !h.includes('buy'));
-      const idxNotes= H.findIndex(h=> h.includes('notes')||h.includes('desc'));
-      const body = rows.slice(1);
-      const out = [];
-      let r=1;
-      for(const row of body){
-        const name = String(row[idxName]||'').trim();
-        if(!name){ r++; continue; }
-        const category = String(row[idxCat]||'').trim();
-        const price = cleanNum(row[idxPrice]);
-        const notes = String(row[idxNotes]||'').trim();
-        out.push({ id:(name+'|'+category+'|'+r).toLowerCase(), name, category, price: whole(price||0), notes });
-        r++;
-      }
-      items = out.sort((a,b)=> (a.category||'').localeCompare(b.category||'') || (a.name||'').localeCompare(b.name||''));
-      fillCats(); render();
-    }
-
-  </script>
-  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
-  <script>
-    // ---- Firebase (if configured) ------------------------------------------
-    function connectFirebase(cfg, shopId){
-      try{
-        // compat SDK is fine when included from admin page as well
-        const app = firebase.apps?.length ? firebase.app() : firebase.initializeApp(cfg);
-        const auth = firebase.auth();
-        return auth.signInAnonymously().then(()=>{
-          const db = firebase.database();
-          refItems = db.ref('/shops/'+shopId+'/items');
-          refPk    = db.ref('/shops/'+shopId+'/pokemon');
-          setSourceTag('Firebase (Live)');
-          refItems.on('value', snap => {
-            const v = snap.val() || {};
-            items = Object.values(v).sort((a,b)=> (a.category||'').localeCompare(b.category||'') || (a.name||'').localeCompare(b.name||''));
-            fillCats(); render();
-          });
-          refPk.on('value', snap => { pokemon = Object.values(snap.val()||{}); /* available for future Pokémon page */ });
-        });
-      }catch(e){
-        console.error(e);
-        setSourceTag('CSV (Firebase error)');
-        return loadFromCsv();
-      }
-    }
-
-    // ---- Requests modal -----------------------------------------------------
-    function openRequests(){
-      const cfg = readAdminConfig();
-      const body = $('#reqBody');
-      if(cfg){
-        body.innerHTML = `
-          <p>Requests are enabled once Firebase is connected on this browser (click <b>Save config</b> in admin). For now, DM <b>Yerttty</b> or <b>Jonfiin</b> on Discord to request price changes, items, or supplier info.</p>
-        `;
-      }else{
-        body.innerHTML = `
-          <p>Requests will be enabled after Firebase is connected. Open <b>admin.html</b>, paste your Firebase config, click <b>Save config</b>, then come back here and Reload.</p>
-        `;
-      }
-      $('#reqModal').classList.remove('hidden');
-      $('#reqModal').classList.add('flex');
-    }
-
-    // ---- Boot ---------------------------------------------------------------
-    async function boot(){
-      // dropdown show/hide (z-indexed)
-      const btn = $('#pkBtn'), menu = $('#pkMenu');
-      btn.addEventListener('click', ()=> { menu.classList.toggle('hidden'); });
-      document.addEventListener('click', (e)=>{
-        if(!btn.contains(e.target) && !menu.contains(e.target)) menu.classList.add('hidden');
-      });
-
-      $('#reqBtn').addEventListener('click', openRequests);
-      $('#reqClose').addEventListener('click', ()=> $('#reqModal').classList.add('hidden'));
-      $('#reloadBtn').addEventListener('click', ()=> location.reload());
-      $('#resetBtn').addEventListener('click', ()=> { $('#q').value=''; $('#cat').value='All'; render(); });
-      $('#q').addEventListener('input', render);
-      $('#cat').addEventListener('change', render);
-
-      const saved = readAdminConfig();
-      if(saved?.cfg && saved?.shopId){
-        // Load Firebase live
-        await connectFirebase(saved.cfg, saved.shopId);
-      }else{
-        // Fall back to CSV
-        await loadFromCsv();
-      }
-    }
-
-    // Load Firebase SDK only when we might use it
-  </script>
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
-  <script>
-    boot();
-  </script>
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+  <style>
+    :root{ --brand:#be185d }
+    .brand{ font-family:'Cinzel','Noto Sans JP',system-ui,Segoe UI,Roboto,Helvetica,Arial }
+    .btn{ display:inline-flex; align-items:center; gap:.5rem; padding:.45rem .9rem; border-radius:.75rem; border:1px solid #e5e7eb; background:#fff }
+    .card{ border:1px solid #f1d5df; border-radius:1rem; background:#fff8fb }
+    .pill{ font-size:.75rem; padding:.15rem .45rem; border-radius:.5rem; background:#ffe4ed }
+    .menu{ position:relative }
+    .menu > .menu-panel{ position:absolute; z-index:50; top:100%; left:0; min-width:12rem; background:#fff; border:1px solid #e5e7eb; border-radius:.75rem; padding:.5rem; display:none; box-shadow:0 10px 20px rgba(0,0,0,.08) }
+    .menu.open > .menu-panel{ display:block }
+    .section-title{ font-weight:800; letter-spacing:.02em; }
+    .grid-items{ display:grid; grid-template-columns:repeat(auto-fill,minmax(260px,1fr)); gap:.75rem }
+  </style>
+</head>
+<body class="bg-gradient-to-b from-rose-50 to-pink-50">
+  <div class="max-w-6xl mx-auto p-4 sm:p-6 space-y-4">
+    <header class="space-y-3">
+      <img src="./Header.jpg" alt="JJBlossoms header" class="w-full h-40 object-cover rounded-2xl shadow" onerror="this.style.display='none'">
+      <div class="flex items-center justify-between gap-2 flex-wrap">
+        <div class="flex items-center gap-2">
+          <span class="brand text-2xl sm:text-3xl font-bold">🌸 JJBlossoms <span class="text-xs align-middle font-normal">SHOP</span></span>
+          <div class="menu">
+            <button id="pkMenuBtn" class="btn">🎴 Pokémon For Sale ▾</button>
+            <div class="menu-panel" id="pkMenu">
+              <a href="#view=pokemon&owner=Yerttty" class="block px-2 py-1 rounded hover:bg-rose-50">Yerttty</a>
+              <a href="#view=pokemon&owner=Jonfiin" class="block px-2 py-1 rounded hover:bg-rose-50">Jonfiin</a>
+              <a href="#view=pokemon" class="block px-2 py-1 rounded hover:bg-rose-50">All Pokémon</a>
+              <div class="border-t my-1"></div>
+              <a href="./admin.html" class="block px-2 py-1 rounded hover:bg-rose-50">🔧 Admin</a>
+            </div>
+          </div>
+          <a href="./" class="btn">🏠 Home</a>
+        </div>
+        <div class="flex items-center gap-2">
+          <button id="btnReload" class="btn">🔄 Reload data</button>
+          <button id="btnRequests" class="btn">📨 Requests</button>
+        </div>
+      </div>
+      <p class="text-xs text-slate-600">Data source: <span id="dataSource">CSV</span> — Buy price = 85% of item price (rounded).</p>
+    </header>
+
+    <section class="card p-3">
+      <div class="flex flex-col sm:flex-row gap-2 items-center">
+        <input id="q" class="w-full px-3 py-2 rounded-lg border border-rose-200" placeholder="Search items, categories...">
+        <div class="flex items-center gap-2">
+          <select id="cat" class="px-3 py-2 rounded-lg border border-rose-200"></select>
+          <button id="reset" class="btn">Reset</button>
+        </div>
+      </div>
+    </section>
+
+    <div id="content"></div>
+
+    <footer class="text-center text-xs text-rose-900/80 mt-8">🌸 JJBlossoms — where Mewtwo shops for deals</footer>
+  </div>
+
+  <dialog id="reqDlg" class="rounded-xl p-0 w-[min(92vw,34rem)]">
+    <form method="dialog" class="p-4 space-y-3">
+      <div class="flex items-center justify-between">
+        <div class="brand font-bold">Requests</div>
+        <button class="btn">✖</button>
+      </div>
+      <div id="reqBody" class="text-sm text-slate-700 leading-relaxed"></div>
+    </form>
+  </dialog>
+
+<script>
+const BUY=0.85, LS='jjb_admin_cfg_v2';
+let app, db, auth, refItems, refPk;
+let items=[], pokemon=[];
+const $=(s)=>document.querySelector(s);
+function parseHash(){ const h=new URLSearchParams(location.hash.replace(/^#/,'')); return { view:h.get('view')||'items', owner:h.get('owner')||'All' }; }
+function idify(s){ return (s||'').toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/(^-|-$)/g,''); }
+
+// Menu
+document.addEventListener('click',(e)=>{
+  if(e.target.id==='pkMenuBtn'){ document.querySelector('.menu').classList.toggle('open'); }
+  else if(!e.target.closest('.menu')){ document.querySelector('.menu').classList.remove('open'); }
+});
+
+function loadCfg(){ try{return JSON.parse(localStorage.getItem(LS)||'{}');}catch{return{}} }
+async function connectIfPossible(){
+  const cfg=loadCfg(); const shopId=(cfg.shopId||'').trim();
+  if(!cfg.cfg || !shopId) { document.getElementById('dataSource').textContent='CSV'; return false; }
+  try{
+    app = firebase.apps.length? firebase.app(): firebase.initializeApp(cfg.cfg);
+    auth = firebase.auth(); await auth.signInAnonymously();
+    db = firebase.database();
+    refItems = db.ref('/shops/'+shopId+'/items');
+    refPk = db.ref('/shops/'+shopId+'/pokemon');
+    document.getElementById('dataSource').textContent='Firebase (Live)';
+    refItems.on('value', snap=>{ const v=snap.val()||{}; items = Object.values(v); render(); });
+    refPk.on('value', snap=>{ const v=snap.val()||{}; pokemon = Object.values(v); render(); });
+    return true;
+  }catch(e){ console.error(e); document.getElementById('dataSource').textContent='CSV (fallback)'; return false; }
+}
+
+async function loadCsv(){
+  try{
+    const res=await fetch('shop.csv',{cache:'no-store'});
+    if(!res.ok) return;
+    const text=await res.text();
+    const wb=XLSX.read(text,{type:'string'});
+    const ws=wb.Sheets[wb.SheetNames[0]];
+    const rows=XLSX.utils.sheet_to_json(ws,{header:1,raw:true});
+    const headers=(rows[0]||[]).map(x=>String(x||'').toLowerCase());
+    const idxName=headers.findIndex(h=>h.includes('name')||h==='item');
+    const idxCat =headers.findIndex(h=>h.includes('cat'));
+    const idxPrice=headers.findIndex(h=>h.includes('sell_price')||h.includes('sell price')||h==='price'||h.includes('price')||h.includes('sell'));
+    const idxNotes=headers.findIndex(h=>h.includes('notes')||h.includes('desc'));
+    const body=rows.slice(1);
+    items = body.map((r,i)=>{
+      const name=String(r[idxName]||'').trim(); if(!name) return null;
+      const category=String(r[idxCat]||'').trim();
+      const sell=Number(r[idxPrice]||0);
+      const notes=String(r[idxNotes]||'').trim();
+      return { id:idify(name+'-'+category+'-'+i), name, category, sellPrice:sell, buyPrice:Math.round(sell*BUY), notes };
+    }).filter(Boolean);
+  }catch(e){ console.error(e); }
+}
+
+function groupByCat(list){ const m=new Map(); for(const it of list){ const c=it.category||'Other'; if(!m.has(c)) m.set(c,[]); m.get(c).push(it);} return [...m.entries()].sort((a,b)=>a[0].localeCompare(b[0])); }
+
+function renderItems(){
+  const q=document.getElementById('q').value.toLowerCase();
+  const catSel=document.getElementById('cat').value||'All';
+  const filtered = items.filter(it=> (catSel==='All'||it.category===catSel) && ((it.name||'').toLowerCase().includes(q) || (it.category||'').toLowerCase().includes(q) || (it.notes||'').toLowerCase().includes(q)) );
+  const groups = groupByCat(filtered);
+  const wrap=document.createElement('div');
+  for(const [cat, list] of groups){
+    const sec=document.createElement('section'); sec.className='space-y-2 mt-4';
+    sec.innerHTML=\`<div class="text-xs uppercase tracking-wider section-title text-rose-900/80">\${cat}</div><div class="grid-items"></div>\`;
+    const grid=sec.querySelector('.grid-items');
+    list.forEach(it=>{
+      const card=document.createElement('div'); card.className='card p-3';
+      const price=Number(it.sellPrice??it.price??0);
+      card.innerHTML=\`<div class="font-semibold">\${it.name}</div>
+        <div class="mt-2 flex items-center gap-2">
+          <span class="pill">Our Price<br><b>$\${price.toFixed(0)}</b></span>
+          <span class="pill">We Buy For (85%)<br><b>$\${Math.round(price*BUY)}</b></span>
+        </div>\`;
+      grid.appendChild(card);
+    });
+    wrap.appendChild(sec);
+  }
+  const content=document.getElementById('content'); content.innerHTML=''; content.appendChild(wrap);
+  const cats=[...new Set(items.map(i=>i.category).filter(Boolean))].sort();
+  const sel=document.getElementById('cat'); sel.innerHTML=''; sel.add(new Option('All','All')); cats.forEach(c=> sel.add(new Option(c,c)));
+}
+
+function renderPokemon(){
+  const params=parseHash(); const owner=params.owner;
+  const q=document.getElementById('q').value.toLowerCase();
+  const list = pokemon.filter(p=>(owner==='All'||p.owner===owner) && ((p.species||'').toLowerCase().includes(q)||(p.nickname||'').toLowerCase().includes(q)||(p.nature||'').toLowerCase().includes(q)||(p.notes||'').toLowerCase().includes(q)));
+  const wrap=document.createElement('div'); const grid=document.createElement('div'); grid.className='grid-items'; wrap.appendChild(grid);
+  for(const p of list){
+    const flags=[p.shiny?'✨ Shiny':null,p.neutered?'Neutered':null].filter(Boolean).join(' · ');
+    const card=document.createElement('div'); card.className='card p-3';
+    card.innerHTML=\`<div class="flex items-center justify-between">
+        <div class="font-semibold">\${p.nickname?`\${p.nickname} (\${p.species})`:p.species}</div>
+        <span class="text-sm font-bold text-rose-900">$\${Number(p.price||0).toFixed(0)}</span>
+      </div>
+      <div class="text-xs mt-1 text-slate-700">\${p.owner}\${flags?' — '+flags:''}</div>
+      <div class="text-xs mt-1 text-slate-700">Lv \${p.level||'?'} • \${p.nature||''}</div>
+      \${p.moves?`<div class="text-xs mt-1 text-slate-700">Moves: \${p.moves}</div>`:''}
+      \${p.notes?`<div class="text-xs mt-1 text-slate-700">\${p.notes}</div>`:''}\`;
+    grid.appendChild(card);
+  }
+  const content=document.getElementById('content'); content.innerHTML=''; content.appendChild(wrap);
+}
+
+function render(){ const view=parseHash().view; if(view==='pokemon') renderPokemon(); else renderItems(); }
+
+document.getElementById('btnRequests').addEventListener('click', ()=>{
+  const cfg=loadCfg(); const live = !!cfg.cfg && !!cfg.shopId;
+  document.getElementById('reqBody').textContent = live
+    ? 'Requests are enabled. Use the admin page to review them.'
+    : 'Requests will be enabled after Firebase is connected. For now, DM Yerttty or Jonfiin on Discord to request price changes, items, or supplier info.';
+  document.getElementById('reqDlg').showModal();
+});
+document.getElementById('q').addEventListener('input', render);
+document.getElementById('cat').addEventListener('change', render);
+document.getElementById('reset').addEventListener('click', ()=>{ document.getElementById('q').value=''; document.getElementById('cat').value='All'; render(); });
+document.getElementById('btnReload').addEventListener('click', ()=>{ location.reload(); });
+window.addEventListener('hashchange', render);
+
+(async()=>{
+  const connected = await connectIfPossible();
+  if(!connected){ await loadCsv(); }
+  render();
+})();
+</script>
 </body>
 </html>
