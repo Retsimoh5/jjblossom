@@ -4,149 +4,251 @@
   <meta charset="utf-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <title>🌸 JJBlossoms Shop — Live</title>
-  <meta name="theme-color" content="#fce7f3"/>
+  <meta name="theme-color" content="#f8eaf0"/>
   <script src="https://cdn.tailwindcss.com"></script>
-  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@700&family=Noto+Sans+JP:wght@400;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;700;900&family=Cinzel:wght@700&display=swap" rel="stylesheet">
+  <!-- Firebase (compat for easier inline use) -->
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
   <style>
-    .brand{font-family:'Cinzel','Noto Sans JP',system-ui,Segoe UI,Roboto,Helvetica,Arial}
-    .chip{display:inline-flex;align-items:center;gap:.375rem;padding:.25rem .5rem;border-radius:.75rem;border:1px solid #e5e7eb;background:#fff;font-size:.75rem}
-    .card{border:1px solid #fee2e2;background:#fff;border-radius:1rem}
+    :root{ --cherry:#ff7aa5; --ink:#0f172a; }
+    .brand{ font-family:'Cinzel','Noto Sans JP',system-ui,Segoe UI,Roboto,Helvetica,Arial }
+    .card{ border:1px solid #f1d9e3; background:#fff; border-radius:16px; }
+    .btn{ display:inline-flex; align-items:center; gap:.5rem; border:1px solid #e2d3da; background:#fff; padding:.5rem .8rem; border-radius:.75rem; }
+    .tag{ background:#fde7f0; color:#b4235f; padding:.1rem .4rem; border-radius:.5rem; font-size:.75rem; }
+    .chip{ border:1px solid #f1d9e3; padding:.15rem .45rem; border-radius:.75rem; font-size:.75rem; white-space:nowrap; }
+    .pill{ padding:.15rem .6rem; border-radius:999px; font-size:.75rem; border:1px solid #e6e6e6; }
+    .shadow-soft{ box-shadow: 0 6px 22px rgba(40,20,40,.06); }
   </style>
 </head>
-<body class="bg-pink-50 text-slate-800">
-  <div class="max-w-6xl mx-auto p-4 sm:p-6 space-y-4">
-    <header class="flex items-center justify-between gap-3">
-      <h1 class="brand text-2xl sm:text-3xl">🌸 JJBlossoms <span class="text-pink-500 text-base align-super">shop</span></h1>
-      <div class="flex items-center gap-2">
-        <div id="dataSource" class="chip">Data source: CSV</div>
-        <a href="https://retsimoh5.github.io/jjblossom/admin.html" class="chip">🔧 Admin</a>
-        <button id="reloadBtn" class="chip">🔄 Reload data</button>
-        <button id="reqBtn" class="chip">📩 Requests</button>
-      </div>
-    </header>
-
-    <div class="flex items-center gap-2">
-      <input id="q" class="w-full rounded-xl border border-slate-300 px-3 py-2" placeholder="Search items, categories...">
-      <select id="cat" class="rounded-xl border border-slate-300 px-3 py-2">
-        <option value="All">All</option>
-      </select>
-      <button id="reset" class="chip">Reset</button>
+<body class="bg-[#fdeff4]">
+  <div class="max-w-6xl mx-auto px-4 lg:px-2 py-4 space-y-4">
+    <!-- Banner -->
+    <div class="rounded-2xl overflow-hidden border border-[#f1d9e3] shadow-soft">
+      <img src="Header.jpg" alt="JJBlossoms banner" class="w-full h-44 object-cover object-center" onerror="this.style.display='none'">
     </div>
 
-    <div id="list" class="space-y-8"></div>
+    <!-- Header bar -->
+    <header class="flex flex-wrap gap-3 items-center justify-between">
+      <div class="flex items-center gap-2">
+        <span class="text-2xl brand">🌸 <span class="font-bold">JJBLOSSOMS</span> <span class="text-sm align-middle">SHOP</span></span>
+        <span id="dataSource" class="pill text-slate-700">Data source: <b>CSV</b></span>
+      </div>
+      <nav class="flex items-center gap-2">
+        <div class="relative">
+          <button id="pkMenu" class="btn">🧬 Pokémon For Sale ▾</button>
+          <div id="pkDropdown" class="hidden absolute z-50 mt-1 w-48 bg-white border rounded-xl shadow-soft">
+            <a href="#pokemon" data-owner="All" class="block px-3 py-2 hover:bg-pink-50">All</a>
+            <a href="#pokemon" data-owner="Yerttty" class="block px-3 py-2 hover:bg-pink-50">Yerttty</a>
+            <a href="#pokemon" data-owner="Jonfiin" class="block px-3 py-2 hover:bg-pink-50">Jonfiin</a>
+          </div>
+        </div>
+        <a href="./admin.html" class="btn">🛠️ Admin</a>
+        <button id="reloadBtn" class="btn">🔄 Reload data</button>
+        <button id="reqBtn" class="btn">📩 Requests</button>
+      </nav>
+    </header>
 
-    <dialog id="reqDialog" class="rounded-xl p-0 w-[min(36rem,95vw)]">
-      <div class="p-4 border-b brand text-lg">Requests</div>
-      <div class="p-4 space-y-2 text-sm">
-        <p>Once Firebase is connected, this will let visitors request price changes, new items, or supplier info.</p>
-        <p>For now, DM <b>Yerttty</b> or <b>Jonfiin</b> on Discord.</p>
+    <!-- Search / filter -->
+    <section class="card p-3 md:p-4">
+      <div class="flex flex-wrap gap-2 items-center">
+        <input id="q" class="flex-1 min-w-[240px] rounded-xl border border-[#f1d9e3] px-3 py-2" placeholder="Search items, categories...">
+        <select id="cat" class="rounded-xl border border-[#f1d9e3] px-3 py-2">
+          <option value="All">All</option>
+        </select>
+        <button id="reset" class="btn">Reset</button>
       </div>
-      <div class="p-3 border-t text-right">
-        <button onclick="document.getElementById('reqDialog').close()" class="chip">Close</button>
+    </section>
+
+    <!-- Items list -->
+    <div id="itemsWrap" class="space-y-8"></div>
+
+    <!-- Pokémon for sale -->
+    <section id="pokemon" class="space-y-3">
+      <div class="flex items-center justify-between">
+        <h2 class="brand text-xl">🧬 Pokémon For Sale</h2>
+        <div class="flex gap-2">
+          <select id="pkOwnerFilter" class="rounded-xl border border-[#f1d9e3] px-3 py-2">
+            <option>All</option><option>Yerttty</option><option>Jonfiin</option>
+          </select>
+          <input id="qPk" class="rounded-xl border border-[#f1d9e3] px-3 py-2" placeholder="Search Pokémon...">
+        </div>
       </div>
-    </dialog>
+      <div id="pkGrid" class="grid md:grid-cols-2 gap-3"></div>
+    </section>
+
+    <footer class="text-center text-xs text-slate-500 py-6">🌸 JJBlossoms — where Mewtwo shops for deals</footer>
   </div>
 
-<script>
-const BUY_RATE=0.85, LS='jjb_admin_cfg_v2', SHOP='jjblossoms';
-let items=[]; const $=s=>document.querySelector(s);
+  <!-- Requests modal -->
+  <dialog id="reqDialog" class="rounded-2xl p-0 w-[min(560px,95vw)]">
+    <div class="p-4 border-b brand text-lg">Requests</div>
+    <div class="p-4 text-sm space-y-2">
+      <p>Requests will be enabled after Firebase is connected. For now, DM <b>Yerttty</b> or <b>Jonfiin</b> on Discord to request price changes or new items.</p>
+    </div>
+    <div class="p-3 flex justify-end border-t">
+      <form method="dialog"><button class="btn">Close</button></form>
+    </div>
+  </dialog>
 
-function groupBy(arr, key){ const m=new Map(); for(const it of arr){ const k=it[key]||'Other'; if(!m.has(k)) m.set(k,[]); m.get(k).push(it);} return m; }
-function money(n){ n=Number(n||0); return '$'+Math.round(n).toString(); }
+  <script>
+    // 1) Pull Firebase config from Admin localStorage if available; fallback to your keys.
+    const LS='jjb_admin_cfg_v2';
+    let cfg=null, shopId='jjblossoms';
+    try{
+      const raw=localStorage.getItem(LS);
+      if(raw){ const j=JSON.parse(raw); if(j?.cfg) cfg=j.cfg; if(j?.shopId) shopId=j.shopId; }
+    }catch{}
+    if(!cfg){ cfg={
+      apiKey: "AIzaSyAfvM_nSppUkYoRa1Bes2NuE-Bs8vTwcIE",
+      authDomain: "jjblossom-35083.firebaseapp.com",
+      databaseURL: "https://jjblossom-35083-default-rtdb.firebaseio.com",
+      projectId: "jjblossom-35083",
+      storageBucket: "jjblossom-35083.firebasestorage.app",
+      messagingSenderId: "480122553743",
+      appId: "1:480122553743:web:04bf017d5e16f28fd477fa",
+      measurementId: "G-GVCG3PTNVP"
+    };}
 
-function render(){
-  const q=$('#q').value.toLowerCase();
-  const cat=$('#cat').value||'All';
-  const filtered = items.filter(it=> (cat==='All'||it.category===cat) &&
-                     ((it.name||'').toLowerCase().includes(q) || (it.category||'').toLowerCase().includes(q) || (it.notes||'').toLowerCase().includes(q)));
-  const byCat = groupBy(filtered,'category');
-  const list=$('#list'); list.innerHTML='';
-  [...byCat.keys()].sort().forEach(catName=>{
-    const group=byCat.get(catName);
-    const section=document.createElement('section');
-    section.innerHTML=`
-      <h3 class="brand text-lg mb-2 flex items-center gap-2"><span>🍥</span> ${catName||'Other'} <span class="text-xs text-slate-400 ml-auto">${group.length} items</span></h3>
-      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3"></div>`;
-    const grid=section.querySelector('div');
-    group.forEach(it=>{
-      const card=document.createElement('div');
-      card.className='card p-3';
-      card.innerHTML=`
-        <div class="font-semibold">${it.name}</div>
-        <div class="mt-2 grid grid-cols-2 gap-2 text-sm">
-          <div class="chip justify-center">Our Price <b>${money(it.sellPrice ?? it.price)}</b></div>
-          <div class="chip justify-center">We Buy (85%) <b>${money((it.sellPrice ?? it.price)*BUY_RATE)}</b></div>
-        </div>`;
-      grid.appendChild(card);
+    // 2) Firebase connect
+    let db, items=[], pokemon=[];
+    async function connect(){
+      try{
+        const app=firebase.apps.length? firebase.app(): firebase.initializeApp(cfg);
+        await firebase.auth().signInAnonymously();
+        db=firebase.database();
+        document.getElementById('dataSource').innerHTML = 'Data source: <b>Firebase (Live)</b>';
+        const refItems=db.ref(`/shops/${shopId}/items`);
+        const refPk   =db.ref(`/shops/${shopId}/pokemon`);
+        refItems.on('value',snap=>{ const v=snap.val()||{}; items=Object.values(v); renderAll(); });
+        refPk.on('value',snap=>{ const v=snap.val()||{}; pokemon=Object.values(v); renderPokemon(); });
+      }catch(e){
+        console.warn('Firebase connect failed, falling back to CSV-only', e);
+        document.getElementById('dataSource').innerHTML = 'Data source: <b>CSV</b>';
+      }
+    }
+
+    // 3) Category icon map (edit filenames if you want different icons)
+    const CATEGORY_ICONS={
+      "Armour/Weapons":"1.png",
+      "DNA":"76.png",
+      "Dungeon Frag":"2510.webp"
+    };
+    function iconFor(cat){
+      const file = CATEGORY_ICONS[cat] || null;
+      if(!file) return "";
+      return `<img src="${file}" class="w-5 h-5 object-contain" onerror="this.style.display='none'">`;
+    }
+
+    // 4) Items render
+    const $=sel=>document.querySelector(sel);
+    function renderAll(){
+      // filters
+      const q=($('#q').value||'').toLowerCase();
+      const catSel=$('#cat').value||'All';
+      // group by category
+      const cats=new Map();
+      for(const it of items){
+        if(catSel!=='All' && it.category!==catSel) continue;
+        const hay=[it.name||'', it.category||'', it.notes||''].join(' ').toLowerCase();
+        if(q && !hay.includes(q)) continue;
+        const key=it.category||'Other';
+        if(!cats.has(key)) cats.set(key,[]);
+        cats.get(key).push(it);
+      }
+      // fill cat dropdown
+      const sel=$('#cat'); const seen=new Set(['All']);
+      for(const it of items){ if(it.category) seen.add(it.category); }
+      const cur=sel.value; sel.innerHTML=''; for(const k of [...seen]) sel.add(new Option(k,k)); sel.value = [...seen].includes(cur)?cur:'All';
+
+      // render
+      const wrap=$('#itemsWrap'); wrap.innerHTML='';
+      for(const [cat,list] of cats){
+        list.sort((a,b)=> (a.name||'').localeCompare(b.name||''));
+        const sec=document.createElement('section');
+        sec.className='space-y-2';
+        sec.innerHTML=`
+          <div class="flex items-center gap-2">
+            <span class="text-sm">🟣</span>
+            <h3 class="brand text-lg flex items-center gap-2">${iconFor(cat)} <span>${cat}</span></h3>
+            <span class="text-[11px] text-slate-500 ml-2">${list.length} item${list.length===1?'':'s'}</span>
+          </div>
+          <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-3"></div>`;
+        const grid=sec.querySelector('div.grid');
+        for(const it of list){
+          const price = Math.round(Number(it.sellPrice ?? it.price ?? 0));
+          const buy   = Math.round(price * 0.85);
+          const el=document.createElement('div');
+          el.className='card p-3 flex flex-col gap-2 hover:shadow-soft transition-shadow';
+          el.innerHTML=`
+            <div class="font-medium">${it.name||''}</div>
+            <div class="flex items-center gap-2 text-xs">
+              <span class="chip">Our Price <b>$${price}</b></span>
+              <span class="chip">We Buy For (85%) <b>$${buy}</b></span>
+              ${it.stock!=='' && it.stock!=null ? `<span class="chip">Stock <b>${it.stock}</b></span>`:''}
+            </div>`;
+          grid.appendChild(el);
+        }
+        wrap.appendChild(sec);
+      }
+    }
+
+    // 5) Pokémon render
+    function renderPokemon(){
+      const owner=$('#pkOwnerFilter').value;
+      const q=($('#qPk').value||'').toLowerCase();
+      const grid=$('#pkGrid'); grid.innerHTML='';
+      const data=pokemon.filter(p=> (owner==='All'||p.owner===owner) && (
+        (p.species||'').toLowerCase().includes(q) || (p.nickname||'').toLowerCase().includes(q) || (p.nature||'').toLowerCase().includes(q) || (p.notes||'').toLowerCase().includes(q)
+      ));
+      for(const p of data){
+        const ivs = p.ivs ? `${p.ivs.hp||0}/${p.ivs.atk||0}/${p.ivs.def||0}/${p.ivs.spa||0}/${p.ivs.spd||0}/${p.ivs.spe||0}` : '';
+        const evs = p.evs ? `${p.evs.hp||0}/${p.evs.atk||0}/${p.evs.def||0}/${p.evs.spa||0}/${p.evs.spd||0}/${p.evs.spe||0}` : '';
+        const flags=[p.shiny?'✨ Shiny':null,p.neutered?'Neutered':null].filter(Boolean).join(' · ');
+        const card=document.createElement('div');
+        card.className='card p-3 flex flex-col gap-2 hover:shadow-soft';
+        card.innerHTML=`
+          <div class="flex items-center justify-between"><div class="font-semibold">${p.nickname?`${p.nickname} (${p.species})`: (p.species||'')}</div><div class="text-xs text-slate-500">${p.owner||''}</div></div>
+          <div class="text-xs flex flex-wrap gap-2">
+            <span class="tag">$${Number(p.price||0).toFixed(0)}</span>
+            ${p.level? `<span class="pill">Lv ${p.level}</span>`:''}
+            ${p.nature? `<span class="pill">${p.nature}</span>`:''}
+            ${flags? `<span class="pill">${flags}</span>`:''}
+          </div>
+          <div class="text-xs text-slate-600 space-y-1">
+            ${p.tera? `<div>Tera: ${p.tera}</div>`:''}
+            ${p.ball? `<div>Ball: ${p.ball}</div>`:''}
+            ${p.held? `<div>Held: ${p.held}</div>`:''}
+            ${p.ability? `<div>Ability: ${p.ability}</div>`:''}
+            ${p.size? `<div>Size: ${p.size}</div>`:''}
+            ${ivs? `<div>IVs ${ivs}</div>`:''}
+            ${evs? `<div>EVs ${evs}</div>`:''}
+            ${p.moves? `<div>Moves: ${p.moves}</div>`:''}
+            ${p.notes? `<div>${p.notes}</div>`:''}
+          </div>`;
+        grid.appendChild(card);
+      }
+    }
+
+    // UI hooks
+    document.getElementById('pkMenu').addEventListener('click',()=>{
+      document.getElementById('pkDropdown').classList.toggle('hidden');
     });
-    list.appendChild(section);
-  });
-}
+    document.getElementById('pkDropdown').addEventListener('click',(e)=>{
+      if(e.target.matches('[data-owner]')){
+        document.getElementById('pkDropdown').classList.add('hidden');
+        document.getElementById('pkOwnerFilter').value=e.target.getAttribute('data-owner');
+        location.hash='#pokemon'; renderPokemon();
+      }
+    });
+    document.getElementById('reqBtn').addEventListener('click',()=> document.getElementById('reqDialog').showModal());
+    document.getElementById('reloadBtn').addEventListener('click',()=> location.reload());
+    document.getElementById('reset').addEventListener('click',()=>{ $('#q').value=''; $('#cat').value='All'; renderAll(); });
+    $('#q').addEventListener('input', renderAll); $('#cat').addEventListener('change', renderAll);
+    $('#pkOwnerFilter').addEventListener('change', renderPokemon); $('#qPk').addEventListener('input', renderPokemon);
 
-function fillCats(){
-  const sel=$('#cat'); const cur=sel.value;
-  const set=new Set(items.map(i=>i.category).filter(Boolean));
-  sel.innerHTML='<option>All</option>';
-  [...set].sort().forEach(c=> sel.add(new Option(c,c)));
-  if(items.some(i=>!i.category)) sel.add(new Option('Other','Other'));
-  sel.value=[...sel.options].some(o=>o.value===cur)?cur:'All';
-}
-
-function setSource(text){ $('#dataSource').textContent='Data source: '+text; }
-
-function getCfg(){ try{ const d=JSON.parse(localStorage.getItem(LS)||'{}'); return d?.cfg || null; }catch{return null;} }
-
-async function loadFromFirebase(){
-  const cfg=getCfg(); if(!cfg) return false;
-  try{
-    const app = firebase.apps.length? firebase.app(): firebase.initializeApp(cfg);
-    const auth=firebase.auth(); await auth.signInAnonymously();
-    const db=firebase.database(); setSource('Firebase (Live)');
-    const snap = await db.ref('/shops/'+SHOP+'/items').get();
-    const v=snap.val()||{}; items=Object.values(v);
-    items.sort((a,b)=> (a.category||'').localeCompare(b.category||'') || (a.name||'').localeCompare(b.name||''));
-    fillCats(); render(); return true;
-  }catch(e){ console.error(e); return false; }
-}
-
-async function loadFromCsv(){
-  try{
-    const res=await fetch('shop.csv',{cache:'no-store'});
-    if(!res.ok) throw new Error('shop.csv not found');
-    const text=await res.text();
-    const wb=XLSX.read(text,{type:'string'});
-    const ws=wb.Sheets[wb.SheetNames[0]];
-    const rows=XLSX.utils.sheet_to_json(ws,{header:1,raw:true});
-    const headers=(rows[0]||[]).map(h=>String(h||'').toLowerCase());
-    const idxName=headers.findIndex(h=>h.includes('name')||h==='item');
-    const idxCat=headers.findIndex(h=>h.includes('cat'));
-    const idxPrice=headers.findIndex(h=>h.includes('sell_price')||h.includes('sell price')||h==='price'||h.includes('price')||h.includes('sell'));
-    const idxNotes=headers.findIndex(h=>h.includes('notes')||h.includes('desc'));
-    items = rows.slice(1).map((r,i)=> ({
-      id: (String(r[idxName]||'')+'|'+i).toLowerCase(),
-      name: String(r[idxName]||'').trim(),
-      category: String(r[idxCat]||'').trim(),
-      sellPrice: Number(r[idxPrice]||0),
-      notes: String(r[idxNotes]||'').trim()
-    })).filter(x=>x.name);
-    items.sort((a,b)=> (a.category||'').localeCompare(b.category||'') || (a.name||'').localeCompare(b.name||''));
-    setSource('CSV');
-    fillCats(); render();
-  }catch(e){ console.error(e); document.getElementById('list').innerHTML='<div class="text-slate-500">Could not load data.</div>'; }
-}
-
-async function boot(){ if(!(await loadFromFirebase())) await loadFromCsv(); }
-document.addEventListener('DOMContentLoaded', boot);
-
-document.getElementById('q').addEventListener('input', render);
-document.getElementById('cat').addEventListener('change', render);
-document.getElementById('reset').addEventListener('click', ()=>{ document.getElementById('q').value=''; document.getElementById('cat').value='All'; render(); });
-document.getElementById('reloadBtn').addEventListener('click', boot);
-document.getElementById('reqBtn').addEventListener('click', ()=> document.getElementById('reqDialog').showModal());
-</script>
+    connect(); // kick off
+  </script>
 </body>
 </html>
