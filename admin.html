@@ -10,7 +10,7 @@
   <!-- Firebase (compat) -->
   <script src="https://www.gstatic.com/firebasejs/10.13.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.13.1/firebase-auth-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.13.1/firebase-database-compat.js"></script>  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.13.1/firebase-database-compat.js"></script>
   <style>
     .brand{font-family:'Cinzel','Noto Sans JP',system-ui,Segoe UI,Roboto,Helvetica,Arial}
     .input{width:100%;padding:.5rem .75rem;border-radius:.75rem;border:1px solid #cbd5e1}
@@ -185,15 +185,6 @@
       db=firebase.database();
       $('#status').textContent='Connected';
       await loadAll();
-    }catch{ alert('Config JSON is invalid'); return; }
-      jset('jj_shop', SHOP); jset('jj_cfg', cfg);
-      try{
-        app=firebase.apps.length? firebase.app() : firebase.initializeApp(cfg);
-      }catch{ app=firebase.app(); }
-      auth=firebase.auth(); await auth.signInAnonymously();
-      db=firebase.database();
-      $('#status').textContent='Connected';
-      await loadAll();
     }
 
     // Buttons
@@ -302,7 +293,7 @@
       }
       if(val!=='' || cur.length) { cur.push(val); rows.push(cur); }
       return rows;
-    } await db.ref(`shops/${SHOP}/items`).remove(); loadItems(); });
+    }
 
     // -------- pokemon --------
     async function loadPk(){ const snap=await db.ref(`shops/${SHOP}/pokemon`).get(); const list=snap.exists()? Object.values(snap.val()) : []; list.sort((a,b)=> (a.owner||'').localeCompare(b.owner||'') || (a.species||'').localeCompare(b.species||'')); renderPk(list); }
