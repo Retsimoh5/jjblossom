@@ -3,17 +3,13 @@
 <head>
   <meta charset="utf-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
-  <title>🌸 JJBlossoms Shop — Live</title>
+  <title>🌸 JJBlossoms Shop — CSV Only</title>
   <meta name="theme-color" content="#0f172a"/>
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;700;900&family=Cinzel:wght@700&display=swap" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
-  <!-- Firebase (Compat CDN) -->
-  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
   <style>
     :root{ --ink:#0f172a; --paper:#f8fafc; --sakura:#fdeef4; }
     html,body{ height:100%; background:linear-gradient(180deg,var(--sakura),#fff); }
@@ -23,9 +19,9 @@
     .btn{ display:inline-flex; align-items:center; gap:.5rem; padding:.5rem 1rem; border-radius:1rem; border:1px solid #cbd5e1; background:#fff }
     .btn-ghost{ background:transparent; border-color:transparent; color:#475569 }
     .input{ width:100%; padding:.5rem .75rem; border-radius:.75rem; border:1px solid #cbd5e1 }
-    .hero{ position:relative; overflow:visible; } /* was hidden: now visible so dropdown isn't clipped */
+    .hero{ position:relative; overflow:visible; }
     .hero:before{ content:""; position:absolute; inset:0; background-image:url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="160" height="160" viewBox="0 0 160 160" fill="none"><path d="M0 80c20-20 60-20 80 0s60 20 80 0v80H0V80z" fill="%23fde2e4"/><path d="M0 64c20-20 60-20 80 0s60 20 80 0v16c-20 20-60 20-80 0s-60-20-80 0V64z" fill="%23fbcfe8" opacity=".5"/></svg>'); opacity:.35; background-size:160px 160px; pointer-events:none }
-    .menu-panel{ box-shadow:0 10px 30px rgba(0,0,0,.15); z-index:9999; } /* force on top */
+    .menu-panel{ box-shadow:0 10px 30px rgba(0,0,0,.15); z-index:9999; }
   </style>
 </head>
 <body>
@@ -37,7 +33,7 @@
       <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3 relative z-20">
         <div class="flex items-center gap-3">
           <h1 class="brand text-2xl sm:text-3xl font-extrabold text-slate-900">🌸 JJBlossoms Shop</h1>
-          <!-- DROPDOWN (click to open, overlays everything) -->
+          <!-- Dropdown (click to open, overlays everything) -->
           <nav class="relative menu">
             <button id="pkBtn" class="btn">Pokémon For Sale ▾</button>
             <div class="menu-panel hidden absolute mt-2 w-56 rounded-xl border bg-white p-2 text-slate-800">
@@ -87,54 +83,26 @@
     <div id="catalog" class="space-y-6"></div>
   </main>
 
-  <!-- Pokémon For Sale view -->
+  <!-- Pokémon For Sale view (static placeholder until Firebase connected) -->
   <main class="max-w-6xl mx-auto px-4 sm:px-6 py-6 space-y-4 hidden" id="view-pokemon">
     <div class="flex items-center justify-between">
       <h2 class="brand text-xl">Pokémon For Sale</h2>
-      <div class="text-xs text-slate-500">Source: <span id="pkSource">Firebase</span></div>
+      <div class="text-xs text-slate-500">Source: <span id="pkSource">Coming soon</span></div>
+    </div>
+    <div class="rounded-xl border p-4 text-sm text-slate-600">
+      Add Pokémon via the admin once Firebase is connected.
     </div>
     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3" id="pkGrid"></div>
   </main>
 
-  <!-- Requests modal -->
+  <!-- Requests modal (CSV-only build just shows a simple alert) -->
   <div id="reqModal" class="fixed inset-0 bg-black/40 hidden items-center justify-center p-4">
     <div class="max-w-2xl w-full bg-white rounded-2xl p-4 space-y-3">
       <div class="flex items-center justify-between">
         <h3 class="brand text-lg">Requests</h3>
         <button id="closeReq" class="btn">✖</button>
       </div>
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
-        <form id="formPrice" class="card p-3 space-y-2">
-          <div class="font-semibold">Request price change</div>
-          <select id="priceItem" class="input"></select>
-          <input id="priceWanted" class="input" type="number" placeholder="Suggested price"/>
-          <input id="priceContact" class="input" placeholder="Your contact (Discord/IGN)"/>
-          <textarea id="priceReason" class="input" placeholder="Reason (optional)"></textarea>
-          <button class="btn" type="submit">Send</button>
-        </form>
-        <form id="formItemReq" class="card p-3 space-y-2">
-          <div class="font-semibold">Request an item</div>
-          <input id="reqName" class="input" placeholder="Item name"/>
-          <input id="reqCat" class="input" placeholder="Category (optional)"/>
-          <input id="reqContact" class="input" placeholder="Your contact (Discord/IGN)"/>
-          <textarea id="reqNotes" class="input" placeholder="Notes (optional)"></textarea>
-          <button class="btn" type="submit">Send</button>
-        </form>
-        <form id="formSupplier" class="card p-3 space-y-2">
-          <div class="font-semibold">Apply to be a supplier / Looking to sell</div>
-          <input id="supName" class="input" placeholder="Your name / IGN"/>
-          <input id="supContact" class="input" placeholder="Contact (Discord/IGN)"/>
-          <textarea id="supItems" class="input" placeholder="What can you supply? (list items & qty)"></textarea>
-          <button class="btn" type="submit">Send</button>
-        </form>
-        <form id="formCustom" class="card p-3 space-y-2">
-          <div class="font-semibold">Other message</div>
-          <input id="msgContact" class="input" placeholder="Your contact (Discord/IGN)"/>
-          <textarea id="msgBody" class="input" placeholder="Your message"></textarea>
-          <button class="btn" type="submit">Send</button>
-        </form>
-      </div>
-      <div class="text-xs text-slate-500">Only Yerttty & Jonfiin receive these (admin inbox). Optional Discord webhook alerts can be enabled.</div>
+      <div class="text-sm text-slate-600">Requests will be enabled after Firebase is connected.</div>
     </div>
   </div>
 
@@ -143,40 +111,73 @@
   </footer>
 
   <script>
-    // ====== CONFIG ======
+    // ===== CSV-ONLY BUILD =====
     const BUY_RATE = 0.85;
-    const AUTOFETCH_FILES = ["shop.xlsx", "shop.csv", "jjblossoms_inventory_2025-10-12(1).csv"];
+    const CSV_CANDIDATES = ["shop.csv","jjblossoms_inventory_2025-10-12(1).csv"]; // tries both
     const SPRITE_FILES = ["./1.png","./2.png","./3.png","./4.png","./5.png","./46.png","./76.png","./566.png"];
 
-    const FIREBASE_CONFIG = {
-      apiKey: "AIzaSyAfvM_nSppUkYoRa1Bes2NuE-Bs8vTwcIE",
-      authDomain: "jjblossom-35083.firebaseapp.com",
-      databaseURL: "https://jjblossom-35083-default-rtdb.firebaseio.com",
-      projectId: "jjblossom-35083",
-      storageBucket: "jjblossom-35083.firebasestorage.app",
-      messagingSenderId: "480122553743",
-      appId: "1:480122553743:web:04bf017d5e16f28fd477fa",
-      measurementId: "G-GVCG3PTNVP"
-    };
-    const SHOP_ID = "jjblossoms";
-    const DISCORD_WEBHOOK = ""; // optional
+    let RAW_ITEMS=[], VIEW_ITEMS=[], CATEGORIES=new Set();
+    const $=(s)=>document.querySelector(s);
+    const fmtInt=(n)=>Number.isFinite(n)?Math.round(n):0;
+    const cleanNumber=(v)=> typeof v==='number'? v: (typeof v==='string'? Number(v.replace(/[^0-9.\-]/g,'')): NaN);
+    const normalize=(h)=>String(h||'').trim().toLowerCase().replace(/\s+/g,' ');
 
-    let RAW_ITEMS = [], VIEW_ITEMS = [], CATEGORIES = new Set();
-    let POKEMON = [];
-    const $ = (s)=>document.querySelector(s);
-    const fmtInt = (n)=> (Number.isFinite(n)? Math.round(n):0);
-    const cleanNumber = (v)=> typeof v==='number'? v: (typeof v==='string'? Number(v.replace(/[^0-9.\-]/g,'')): NaN);
-
-    function detectHeaders(headers){
-      const map={name:['name','item','item name','title'],category:['category','cat','type','group'],price:['price','sell','sell price','our price','listed price','amount'],stock:['stock','qty','quantity'],notes:['notes','desc','description']};
-      const lower=headers.map(h=>String(h||'').trim().toLowerCase());
-      const pick=keys=>{for(const k of keys){const i=lower.findIndex(h=>h===k); if(i!==-1) return i;} for(const k of keys){const i=lower.findIndex(h=>h.includes(k)); if(i!==-1) return i;} return -1;};
-      return {name:pick(map.name),category:pick(map.category),price:pick(map.price),stock:pick(map.stock),notes:pick(map.notes)};
+    function findHeaderIdx(headers, wanted, exclude=[]){
+      const H=headers.map(normalize), bad=exclude.map(normalize);
+      for(const key of wanted){
+        const idx = H.findIndex(h=> h===key || h.includes(key));
+        if(idx!==-1){ const t=H[idx]; if(bad.some(b=>t.includes(b))) continue; return idx; }
+      }
+      return -1;
+    }
+    function detectHeaderMap(headers){
+      const H=headers.map(normalize);
+      const nameIdx = findHeaderIdx(H, ["name","item name","item","title"]);
+      const catIdx  = findHeaderIdx(H, ["category","cat","type","group"]);
+      // prefer sell/our price; avoid buy
+      const priceIdx= findHeaderIdx(H, ["sell price","our price","price","listed price","amount","sell"], ["buy"]);
+      const stockIdx= findHeaderIdx(H, ["stock","qty","quantity","amount in stock"]);
+      const notesIdx= findHeaderIdx(H, ["notes","desc","description","note"]);
+      return {nameIdx,catIdx,priceIdx,stockIdx,notesIdx};
     }
 
-    function computeItems(rows){ const out=[]; for(const r of rows){ const name=String(r.name||'').trim(); if(!name) continue; const category=String(r.category||'').trim(); const price=cleanNumber(r.price); const stock=r.stock===''||r.stock==null? '': Number(r.stock); const notes=String(r.notes||'').trim(); const buy=fmtInt((price||0)*BUY_RATE); out.push({name,category,price:fmtInt(price||0),buy,stock:Number.isFinite(stock)?stock:'',notes}); } return out; }
+    function rowsToItems(rows){
+      const out=[]; const headers = rows[0]||[]; const map = detectHeaderMap(headers);
+      for(let r=1;r<rows.length;r++){
+        const row=rows[r]||[];
+        const name = String(row[map.nameIdx]||"").trim();
+        if(!name) continue; // skip blank
+        const category = String(row[map.catIdx]||"").trim();
+        const price = cleanNumber(row[map.priceIdx]);
+        const stockRaw = row[map.stockIdx];
+        const hasStock = !(stockRaw===undefined || stockRaw===null || String(stockRaw).trim()==="");
+        const stock = hasStock ? Number(stockRaw) : "";
+        const notes = String(row[map.notesIdx]||"").trim();
+        const buy = fmtInt((Number(price)||0)*BUY_RATE);
+        // unique id per row so duplicates (like many DNA/Frags) never overwrite
+        const id = (name+"|"+category+"|"+r).toLowerCase();
+        out.push({id,name,category,price:fmtInt(price||0),buy,stock: hasStock && Number.isFinite(stock)?stock:"",notes});
+      }
+      return out;
+    }
 
-    function groupByCategory(items){ const groups={}; for(const it of items){ const key=it.category||'Other'; (groups[key] ||= []).push(it);} const sortedCats=Object.keys(groups).sort((a,b)=>a.localeCompare(b)); for(const c of sortedCats){ groups[c].sort((a,b)=>a.name.localeCompare(b.name)); } return {groups,sortedCats}; }
+    function groupByCategory(items){
+      const groups={};
+      for(const it of items){ const key=it.category||"Other"; (groups[key] ||= []).push(it); }
+      const sortedCats=Object.keys(groups).sort((a,b)=>a.localeCompare(b));
+      for(const c of sortedCats){ groups[c].sort((a,b)=>a.name.localeCompare(b.name)); }
+      return {groups,sortedCats};
+    }
+
+    function refreshCategories(){
+      CATEGORIES=new Set(VIEW_ITEMS.map(i=>i.category).filter(Boolean));
+      const sel=$('#categorySelect'); const current=sel.value; sel.innerHTML='';
+      sel.add(new Option('All','All'));
+      [...CATEGORIES].sort((a,b)=>a.localeCompare(b)).forEach(c=> sel.add(new Option(c,c)));
+      if(VIEW_ITEMS.some(i=>!i.category)) sel.add(new Option('Other','Other'));
+      sel.value = [...sel.options].some(o=>o.value===current)? current : 'All';
+      const priceSel=$('#priceItem'); if(priceSel){ priceSel.innerHTML=''; VIEW_ITEMS.forEach(i=> priceSel.add(new Option(i.name, i.name))); }
+    }
 
     function renderItems(){
       const catalog=$('#catalog'); catalog.innerHTML='';
@@ -203,73 +204,62 @@
           </div>`; grid.appendChild(card);} catalog.appendChild(sec); }
     }
 
-    function refreshCategories(){ CATEGORIES=new Set(VIEW_ITEMS.map(i=>i.category).filter(Boolean)); const sel=$('#categorySelect'); const current=sel.value; sel.innerHTML=''; const optAll=new Option('All','All'); sel.add(optAll); [...CATEGORIES].sort((a,b)=>a.localeCompare(b)).forEach(c=>sel.add(new Option(c,c))); if(VIEW_ITEMS.some(i=>!i.category)) sel.add(new Option('Other','Other')); sel.value=current && [...sel.options].some(o=>o.value===current)? current:'All'; const priceSel=$('#priceItem'); if(priceSel){ priceSel.innerHTML=''; VIEW_ITEMS.forEach(i=> priceSel.add(new Option(i.name, i.name))); }
+    function loadFromWorkbook(wb){
+      const ws=wb.Sheets[wb.SheetNames[0]];
+      const rows=XLSX.utils.sheet_to_json(ws,{header:1,raw:true});
+      if(!rows.length){ return; }
+      VIEW_ITEMS = rowsToItems(rows);
+      refreshCategories(); renderItems();
     }
 
-    function loadFromRows(rows){ RAW_ITEMS=rows; VIEW_ITEMS=computeItems(RAW_ITEMS); refreshCategories(); renderItems(); }
-
-    function loadFromWorkbook(wb){ const ws=wb.Sheets[wb.SheetNames[0]]; const rows=XLSX.utils.sheet_to_json(ws,{header:1,raw:true}); if(!rows.length){return;} const headers=rows[0]; const map=detectHeaders(headers); const body=rows.slice(1).map(r=>({name:r[map.name],category:r[map.category],price:r[map.price],stock:r[map.stock],notes:r[map.notes]})); loadFromRows(body); }
-
-    async function tryAutoFetchCSV(){ $('#sourceTag').textContent='CSV'; for(const fname of AUTOFETCH_FILES){ try{ const res=await fetch(fname,{cache:'no-store'}); if(!res.ok) continue; const blob=await res.blob(); if(fname.endsWith('.csv')){ const txt=await blob.text(); const wb=XLSX.read(txt,{type:'string'}); loadFromWorkbook(wb); return true; } else { const ab=await blob.arrayBuffer(); const wb=XLSX.read(ab,{type:'array'}); loadFromWorkbook(wb); return true; } }catch(e){} } return false; }
-
-    // ====== Firebase live read ======
-    let itemsRef=null, pokemonRef=null; async function tryFirebase(){ if(!FIREBASE_CONFIG||!FIREBASE_CONFIG.apiKey||!SHOP_ID){ return false; } try{ const app=firebase.apps.length? firebase.app(): firebase.initializeApp(FIREBASE_CONFIG); const auth=firebase.auth(); await auth.signInAnonymously(); const db=firebase.database(); itemsRef=db.ref(`/shops/${SHOP_ID}/items`); pokemonRef=db.ref(`/shops/${SHOP_ID}/pokemon`); itemsRef.on('value',snap=>{ const val=snap.val(); if(!val) return; const arr=Object.values(val).sort((a,b)=> (a.name||'').localeCompare(b.name||'')); const rows=arr.map(x=>({name:x.name,category:x.category,price:x.sellPrice ?? x.price, stock:x.stock ?? '', notes:x.notes??''})); $('#sourceTag').textContent='Firebase (Live)'; loadFromRows(rows); }); pokemonRef.on('value',snap=>{ const val=snap.val()||{}; POKEMON = Object.values(val).sort((a,b)=> (b._ts||0)-(a._ts||0)); if(location.hash.startsWith('#pokemon')) renderPokemon(); }); return true; } catch(e){ console.warn('firebase failed',e); return false; } }
-
-    function renderPokemon(){ const grid=$('#pkGrid'); grid.innerHTML=''; const sym='$'; const filter = (location.hash.split(':')[1]||'All'); const list = POKEMON.filter(p=> filter==='All' || (p.owner||'')===filter ); for(const p of list){ const card=document.createElement('div'); card.className='card p-4'; card.innerHTML=`
-        <div class="flex items-start justify-between gap-3">
-          <div>
-            <div class="font-semibold">${p.species||'Pokémon'} ${p.level?`Lv.${p.level}`:''}</div>
-            <div class="text-xs text-slate-500 mt-1">Nature: ${p.nature||'-'} ${p.owner?`• Seller: ${p.owner}`:''}</div>
-          </div>
-          <div class="px-2 py-1 rounded-full text-xs font-semibold bg-pink-100 text-pink-800">${sym}${Number(p.price||0).toFixed(0)}</div>
-        </div>
-        ${p.notes? `<div class="mt-2 text-sm text-slate-600">${p.notes}</div>`: ''}
-      `; grid.appendChild(card); }
+    async function loadCSV(){
+      $('#sourceTag').textContent='CSV';
+      for(const fname of CSV_CANDIDATES){
+        try{
+          const res = await fetch(fname,{cache:'no-store'});
+          if(!res.ok) continue;
+          const text = await res.text();
+          const wb = XLSX.read(text,{type:'string'});
+          loadFromWorkbook(wb);
+          return true;
+        }catch(e){}
+      }
+      return false;
     }
-
-    async function reload(){ const ok=await tryFirebase(); if(!ok){ await tryAutoFetchCSV(); } }
-
-    // ====== Requests ======
-    async function sendRequest(payload){ try{ if(FIREBASE_CONFIG&&SHOP_ID){ const db=firebase.database(); const ref=db.ref(`/shops/${SHOP_ID}/requests`).push(); await ref.set({ ...payload, _ts: Date.now() }); } if(DISCORD_WEBHOOK){ fetch(DISCORD_WEBHOOK,{ method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ content: `📨 **JJBlossoms Request** (${payload.type})
-From: ${payload.contact||'unknown'}
-${payload.item?('Item: '+payload.item+'
-'):''}${payload.body||''}` }) }).catch(()=>{}); } alert('Sent!'); document.querySelector('#reqModal').classList.add('hidden'); }catch(e){ alert('Failed to send'); }
-    }
-
-    document.querySelector('#openRequests').addEventListener('click', ()=> document.querySelector('#reqModal').classList.remove('hidden'));
-    document.querySelector('#closeReq').addEventListener('click', ()=> document.querySelector('#reqModal').classList.add('hidden'));
-
-    document.querySelector('#formPrice').addEventListener('submit', (e)=>{ e.preventDefault(); sendRequest({ type:'price_change', item: document.querySelector('#priceItem').value, wanted: Number(document.querySelector('#priceWanted').value||0), contact: document.querySelector('#priceContact').value, body: document.querySelector('#priceReason').value }); });
-    document.querySelector('#formItemReq').addEventListener('submit', (e)=>{ e.preventDefault(); sendRequest({ type:'item_request', item: document.querySelector('#reqName').value, category: document.querySelector('#reqCat').value, contact: document.querySelector('#reqContact').value, body: document.querySelector('#reqNotes').value }); });
-    document.querySelector('#formSupplier').addEventListener('submit', (e)=>{ e.preventDefault(); sendRequest({ type:'supplier', contact: document.querySelector('#supContact').value, body: `Name: ${document.querySelector('#supName').value}
-Items: ${document.querySelector('#supItems').value}` }); });
-    document.querySelector('#formCustom').addEventListener('submit', (e)=>{ e.preventDefault(); sendRequest({ type:'message', contact: document.querySelector('#msgContact').value, body: document.querySelector('#msgBody').value }); });
-
-    // ====== Routing (items vs pokemon)
-    function route(){ const h=location.hash; if(h.startsWith('#pokemon')){ document.querySelector('#view-items').classList.add('hidden'); document.querySelector('#view-pokemon').classList.remove('hidden'); renderPokemon(); } else { document.querySelector('#view-pokemon').classList.add('hidden'); document.querySelector('#view-items').classList.remove('hidden'); } }
-    window.addEventListener('hashchange', route);
 
     // Dropdown toggle (click)
-    (() => {
-      const menu = document.querySelector('nav.menu'); if (!menu) return;
-      const btn = menu.querySelector('#pkBtn'); const panel = menu.querySelector('.menu-panel');
-      btn.addEventListener('click', (e) => { e.stopPropagation(); panel.classList.toggle('hidden'); });
-      document.addEventListener('click', () => panel.classList.add('hidden'));
-      window.addEventListener('hashchange', () => panel.classList.add('hidden'));
+    (()=>{
+      const menu=document.querySelector('nav.menu');
+      const btn=menu.querySelector('#pkBtn');
+      const panel=menu.querySelector('.menu-panel');
+      btn.addEventListener('click',(e)=>{ e.stopPropagation(); panel.classList.toggle('hidden'); });
+      document.addEventListener('click',()=>panel.classList.add('hidden'));
+      window.addEventListener('hashchange',()=>panel.classList.add('hidden'));
     })();
 
     // Home button
-    document.querySelector('#homeBtn').addEventListener('click', (e)=>{ e.preventDefault(); location.hash=''; route(); });
+    document.querySelector('#homeBtn').addEventListener('click',(e)=>{ e.preventDefault(); location.hash=''; route(); });
 
-    // Filters
+    function route(){
+      const h=location.hash;
+      if(h.startsWith('#pokemon')){
+        document.querySelector('#view-items').classList.add('hidden');
+        document.querySelector('#view-pokemon').classList.remove('hidden');
+      }else{
+        document.querySelector('#view-pokemon').classList.add('hidden');
+        document.querySelector('#view-items').classList.remove('hidden');
+      }
+    }
+    window.addEventListener('hashchange', route);
+
     document.querySelector('#searchInput').addEventListener('input', renderItems);
     document.querySelector('#categorySelect').addEventListener('change', renderItems);
-    document.querySelector('#resetFilters').addEventListener('click', ()=>{ document.querySelector('#searchInput').value=''; document.querySelector('#categorySelect').value='All'; renderItems(); });
-    document.querySelector('#reloadBtn').addEventListener('click', reload);
+    document.querySelector('#resetFilters').addEventListener('click',()=>{ document.querySelector('#searchInput').value=''; document.querySelector('#categorySelect').value='All'; renderItems(); });
+    document.querySelector('#reloadBtn').addEventListener('click', loadCSV);
 
     // Boot
     route();
-    reload();
+    loadCSV();
   </script>
 </body>
 </html>
