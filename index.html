@@ -6,201 +6,147 @@
   <title>🌸 JJBlossoms Shop — Live</title>
   <meta name="theme-color" content="#fce7f3"/>
   <script src="https://cdn.tailwindcss.com"></script>
-  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;700;900&family=Cinzel:wght@700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@700&family=Noto+Sans+JP:wght@400;700&display=swap" rel="stylesheet">
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
   <style>
-    :root{ --brand:#be185d }
-    .brand{ font-family:'Cinzel','Noto Sans JP',system-ui,Segoe UI,Roboto,Helvetica,Arial }
-    .btn{ display:inline-flex; align-items:center; gap:.5rem; padding:.45rem .9rem; border-radius:.75rem; border:1px solid #e5e7eb; background:#fff }
-    .card{ border:1px solid #f1d5df; border-radius:1rem; background:#fff8fb }
-    .pill{ font-size:.75rem; padding:.15rem .45rem; border-radius:.5rem; background:#ffe4ed }
-    .menu{ position:relative }
-    .menu > .menu-panel{ position:absolute; z-index:50; top:100%; left:0; min-width:12rem; background:#fff; border:1px solid #e5e7eb; border-radius:.75rem; padding:.5rem; display:none; box-shadow:0 10px 20px rgba(0,0,0,.08) }
-    .menu.open > .menu-panel{ display:block }
-    .section-title{ font-weight:800; letter-spacing:.02em; }
-    .grid-items{ display:grid; grid-template-columns:repeat(auto-fill,minmax(260px,1fr)); gap:.75rem }
+    .brand{font-family:'Cinzel','Noto Sans JP',system-ui,Segoe UI,Roboto,Helvetica,Arial}
+    .chip{display:inline-flex;align-items:center;gap:.375rem;padding:.25rem .5rem;border-radius:.75rem;border:1px solid #e5e7eb;background:#fff;font-size:.75rem}
+    .card{border:1px solid #fee2e2;background:#fff;border-radius:1rem}
   </style>
 </head>
-<body class="bg-gradient-to-b from-rose-50 to-pink-50">
+<body class="bg-pink-50 text-slate-800">
   <div class="max-w-6xl mx-auto p-4 sm:p-6 space-y-4">
-    <header class="space-y-3">
-      <img src="./Header.jpg" alt="JJBlossoms header" class="w-full h-40 object-cover rounded-2xl shadow" onerror="this.style.display='none'">
-      <div class="flex items-center justify-between gap-2 flex-wrap">
-        <div class="flex items-center gap-2">
-          <span class="brand text-2xl sm:text-3xl font-bold">🌸 JJBlossoms <span class="text-xs align-middle font-normal">SHOP</span></span>
-          <div class="menu">
-            <button id="pkMenuBtn" class="btn">🎴 Pokémon For Sale ▾</button>
-            <div class="menu-panel" id="pkMenu">
-              <a href="#view=pokemon&owner=Yerttty" class="block px-2 py-1 rounded hover:bg-rose-50">Yerttty</a>
-              <a href="#view=pokemon&owner=Jonfiin" class="block px-2 py-1 rounded hover:bg-rose-50">Jonfiin</a>
-              <a href="#view=pokemon" class="block px-2 py-1 rounded hover:bg-rose-50">All Pokémon</a>
-              <div class="border-t my-1"></div>
-              <a href="./admin.html" class="block px-2 py-1 rounded hover:bg-rose-50">🔧 Admin</a>
-            </div>
-          </div>
-          <a href="./" class="btn">🏠 Home</a>
-        </div>
-        <div class="flex items-center gap-2">
-          <button id="btnReload" class="btn">🔄 Reload data</button>
-          <button id="btnRequests" class="btn">📨 Requests</button>
-        </div>
+    <header class="flex items-center justify-between gap-3">
+      <h1 class="brand text-2xl sm:text-3xl">🌸 JJBlossoms <span class="text-pink-500 text-base align-super">shop</span></h1>
+      <div class="flex items-center gap-2">
+        <div id="dataSource" class="chip">Data source: CSV</div>
+        <a href="https://retsimoh5.github.io/jjblossom/admin.html" class="chip">🔧 Admin</a>
+        <button id="reloadBtn" class="chip">🔄 Reload data</button>
+        <button id="reqBtn" class="chip">📩 Requests</button>
       </div>
-      <p class="text-xs text-slate-600">Data source: <span id="dataSource">CSV</span> — Buy price = 85% of item price (rounded).</p>
     </header>
 
-    <section class="card p-3">
-      <div class="flex flex-col sm:flex-row gap-2 items-center">
-        <input id="q" class="w-full px-3 py-2 rounded-lg border border-rose-200" placeholder="Search items, categories...">
-        <div class="flex items-center gap-2">
-          <select id="cat" class="px-3 py-2 rounded-lg border border-rose-200"></select>
-          <button id="reset" class="btn">Reset</button>
-        </div>
+    <div class="flex items-center gap-2">
+      <input id="q" class="w-full rounded-xl border border-slate-300 px-3 py-2" placeholder="Search items, categories...">
+      <select id="cat" class="rounded-xl border border-slate-300 px-3 py-2">
+        <option value="All">All</option>
+      </select>
+      <button id="reset" class="chip">Reset</button>
+    </div>
+
+    <div id="list" class="space-y-8"></div>
+
+    <dialog id="reqDialog" class="rounded-xl p-0 w-[min(36rem,95vw)]">
+      <div class="p-4 border-b brand text-lg">Requests</div>
+      <div class="p-4 space-y-2 text-sm">
+        <p>Once Firebase is connected, this will let visitors request price changes, new items, or supplier info.</p>
+        <p>For now, DM <b>Yerttty</b> or <b>Jonfiin</b> on Discord.</p>
       </div>
-    </section>
-
-    <div id="content"></div>
-
-    <footer class="text-center text-xs text-rose-900/80 mt-8">🌸 JJBlossoms — where Mewtwo shops for deals</footer>
+      <div class="p-3 border-t text-right">
+        <button onclick="document.getElementById('reqDialog').close()" class="chip">Close</button>
+      </div>
+    </dialog>
   </div>
 
-  <dialog id="reqDlg" class="rounded-xl p-0 w-[min(92vw,34rem)]">
-    <form method="dialog" class="p-4 space-y-3">
-      <div class="flex items-center justify-between">
-        <div class="brand font-bold">Requests</div>
-        <button class="btn">✖</button>
-      </div>
-      <div id="reqBody" class="text-sm text-slate-700 leading-relaxed"></div>
-    </form>
-  </dialog>
-
 <script>
-const BUY=0.85, LS='jjb_admin_cfg_v2';
-let app, db, auth, refItems, refPk;
-let items=[], pokemon=[];
-const $=(s)=>document.querySelector(s);
-function parseHash(){ const h=new URLSearchParams(location.hash.replace(/^#/,'')); return { view:h.get('view')||'items', owner:h.get('owner')||'All' }; }
-function idify(s){ return (s||'').toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/(^-|-$)/g,''); }
+const BUY_RATE=0.85, LS='jjb_admin_cfg_v2', SHOP='jjblossoms';
+let items=[]; const $=s=>document.querySelector(s);
 
-// Menu
-document.addEventListener('click',(e)=>{
-  if(e.target.id==='pkMenuBtn'){ document.querySelector('.menu').classList.toggle('open'); }
-  else if(!e.target.closest('.menu')){ document.querySelector('.menu').classList.remove('open'); }
-});
+function groupBy(arr, key){ const m=new Map(); for(const it of arr){ const k=it[key]||'Other'; if(!m.has(k)) m.set(k,[]); m.get(k).push(it);} return m; }
+function money(n){ n=Number(n||0); return '$'+Math.round(n).toString(); }
 
-function loadCfg(){ try{return JSON.parse(localStorage.getItem(LS)||'{}');}catch{return{}} }
-async function connectIfPossible(){
-  const cfg=loadCfg(); const shopId=(cfg.shopId||'').trim();
-  if(!cfg.cfg || !shopId) { document.getElementById('dataSource').textContent='CSV'; return false; }
-  try{
-    app = firebase.apps.length? firebase.app(): firebase.initializeApp(cfg.cfg);
-    auth = firebase.auth(); await auth.signInAnonymously();
-    db = firebase.database();
-    refItems = db.ref('/shops/'+shopId+'/items');
-    refPk = db.ref('/shops/'+shopId+'/pokemon');
-    document.getElementById('dataSource').textContent='Firebase (Live)';
-    refItems.on('value', snap=>{ const v=snap.val()||{}; items = Object.values(v); render(); });
-    refPk.on('value', snap=>{ const v=snap.val()||{}; pokemon = Object.values(v); render(); });
-    return true;
-  }catch(e){ console.error(e); document.getElementById('dataSource').textContent='CSV (fallback)'; return false; }
+function render(){
+  const q=$('#q').value.toLowerCase();
+  const cat=$('#cat').value||'All';
+  const filtered = items.filter(it=> (cat==='All'||it.category===cat) &&
+                     ((it.name||'').toLowerCase().includes(q) || (it.category||'').toLowerCase().includes(q) || (it.notes||'').toLowerCase().includes(q)));
+  const byCat = groupBy(filtered,'category');
+  const list=$('#list'); list.innerHTML='';
+  [...byCat.keys()].sort().forEach(catName=>{
+    const group=byCat.get(catName);
+    const section=document.createElement('section');
+    section.innerHTML=`
+      <h3 class="brand text-lg mb-2 flex items-center gap-2"><span>🍥</span> ${catName||'Other'} <span class="text-xs text-slate-400 ml-auto">${group.length} items</span></h3>
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3"></div>`;
+    const grid=section.querySelector('div');
+    group.forEach(it=>{
+      const card=document.createElement('div');
+      card.className='card p-3';
+      card.innerHTML=`
+        <div class="font-semibold">${it.name}</div>
+        <div class="mt-2 grid grid-cols-2 gap-2 text-sm">
+          <div class="chip justify-center">Our Price <b>${money(it.sellPrice ?? it.price)}</b></div>
+          <div class="chip justify-center">We Buy (85%) <b>${money((it.sellPrice ?? it.price)*BUY_RATE)}</b></div>
+        </div>`;
+      grid.appendChild(card);
+    });
+    list.appendChild(section);
+  });
 }
 
-async function loadCsv(){
+function fillCats(){
+  const sel=$('#cat'); const cur=sel.value;
+  const set=new Set(items.map(i=>i.category).filter(Boolean));
+  sel.innerHTML='<option>All</option>';
+  [...set].sort().forEach(c=> sel.add(new Option(c,c)));
+  if(items.some(i=>!i.category)) sel.add(new Option('Other','Other'));
+  sel.value=[...sel.options].some(o=>o.value===cur)?cur:'All';
+}
+
+function setSource(text){ $('#dataSource').textContent='Data source: '+text; }
+
+function getCfg(){ try{ const d=JSON.parse(localStorage.getItem(LS)||'{}'); return d?.cfg || null; }catch{return null;} }
+
+async function loadFromFirebase(){
+  const cfg=getCfg(); if(!cfg) return false;
+  try{
+    const app = firebase.apps.length? firebase.app(): firebase.initializeApp(cfg);
+    const auth=firebase.auth(); await auth.signInAnonymously();
+    const db=firebase.database(); setSource('Firebase (Live)');
+    const snap = await db.ref('/shops/'+SHOP+'/items').get();
+    const v=snap.val()||{}; items=Object.values(v);
+    items.sort((a,b)=> (a.category||'').localeCompare(b.category||'') || (a.name||'').localeCompare(b.name||''));
+    fillCats(); render(); return true;
+  }catch(e){ console.error(e); return false; }
+}
+
+async function loadFromCsv(){
   try{
     const res=await fetch('shop.csv',{cache:'no-store'});
-    if(!res.ok) return;
+    if(!res.ok) throw new Error('shop.csv not found');
     const text=await res.text();
     const wb=XLSX.read(text,{type:'string'});
     const ws=wb.Sheets[wb.SheetNames[0]];
     const rows=XLSX.utils.sheet_to_json(ws,{header:1,raw:true});
-    const headers=(rows[0]||[]).map(x=>String(x||'').toLowerCase());
+    const headers=(rows[0]||[]).map(h=>String(h||'').toLowerCase());
     const idxName=headers.findIndex(h=>h.includes('name')||h==='item');
-    const idxCat =headers.findIndex(h=>h.includes('cat'));
+    const idxCat=headers.findIndex(h=>h.includes('cat'));
     const idxPrice=headers.findIndex(h=>h.includes('sell_price')||h.includes('sell price')||h==='price'||h.includes('price')||h.includes('sell'));
     const idxNotes=headers.findIndex(h=>h.includes('notes')||h.includes('desc'));
-    const body=rows.slice(1);
-    items = body.map((r,i)=>{
-      const name=String(r[idxName]||'').trim(); if(!name) return null;
-      const category=String(r[idxCat]||'').trim();
-      const sell=Number(r[idxPrice]||0);
-      const notes=String(r[idxNotes]||'').trim();
-      return { id:idify(name+'-'+category+'-'+i), name, category, sellPrice:sell, buyPrice:Math.round(sell*BUY), notes };
-    }).filter(Boolean);
-  }catch(e){ console.error(e); }
+    items = rows.slice(1).map((r,i)=> ({
+      id: (String(r[idxName]||'')+'|'+i).toLowerCase(),
+      name: String(r[idxName]||'').trim(),
+      category: String(r[idxCat]||'').trim(),
+      sellPrice: Number(r[idxPrice]||0),
+      notes: String(r[idxNotes]||'').trim()
+    })).filter(x=>x.name);
+    items.sort((a,b)=> (a.category||'').localeCompare(b.category||'') || (a.name||'').localeCompare(b.name||''));
+    setSource('CSV');
+    fillCats(); render();
+  }catch(e){ console.error(e); document.getElementById('list').innerHTML='<div class="text-slate-500">Could not load data.</div>'; }
 }
 
-function groupByCat(list){ const m=new Map(); for(const it of list){ const c=it.category||'Other'; if(!m.has(c)) m.set(c,[]); m.get(c).push(it);} return [...m.entries()].sort((a,b)=>a[0].localeCompare(b[0])); }
+async function boot(){ if(!(await loadFromFirebase())) await loadFromCsv(); }
+document.addEventListener('DOMContentLoaded', boot);
 
-function renderItems(){
-  const q=document.getElementById('q').value.toLowerCase();
-  const catSel=document.getElementById('cat').value||'All';
-  const filtered = items.filter(it=> (catSel==='All'||it.category===catSel) && ((it.name||'').toLowerCase().includes(q) || (it.category||'').toLowerCase().includes(q) || (it.notes||'').toLowerCase().includes(q)) );
-  const groups = groupByCat(filtered);
-  const wrap=document.createElement('div');
-  for(const [cat, list] of groups){
-    const sec=document.createElement('section'); sec.className='space-y-2 mt-4';
-    sec.innerHTML=\`<div class="text-xs uppercase tracking-wider section-title text-rose-900/80">\${cat}</div><div class="grid-items"></div>\`;
-    const grid=sec.querySelector('.grid-items');
-    list.forEach(it=>{
-      const card=document.createElement('div'); card.className='card p-3';
-      const price=Number(it.sellPrice??it.price??0);
-      card.innerHTML=\`<div class="font-semibold">\${it.name}</div>
-        <div class="mt-2 flex items-center gap-2">
-          <span class="pill">Our Price<br><b>$\${price.toFixed(0)}</b></span>
-          <span class="pill">We Buy For (85%)<br><b>$\${Math.round(price*BUY)}</b></span>
-        </div>\`;
-      grid.appendChild(card);
-    });
-    wrap.appendChild(sec);
-  }
-  const content=document.getElementById('content'); content.innerHTML=''; content.appendChild(wrap);
-  const cats=[...new Set(items.map(i=>i.category).filter(Boolean))].sort();
-  const sel=document.getElementById('cat'); sel.innerHTML=''; sel.add(new Option('All','All')); cats.forEach(c=> sel.add(new Option(c,c)));
-}
-
-function renderPokemon(){
-  const params=parseHash(); const owner=params.owner;
-  const q=document.getElementById('q').value.toLowerCase();
-  const list = pokemon.filter(p=>(owner==='All'||p.owner===owner) && ((p.species||'').toLowerCase().includes(q)||(p.nickname||'').toLowerCase().includes(q)||(p.nature||'').toLowerCase().includes(q)||(p.notes||'').toLowerCase().includes(q)));
-  const wrap=document.createElement('div'); const grid=document.createElement('div'); grid.className='grid-items'; wrap.appendChild(grid);
-  for(const p of list){
-    const flags=[p.shiny?'✨ Shiny':null,p.neutered?'Neutered':null].filter(Boolean).join(' · ');
-    const card=document.createElement('div'); card.className='card p-3';
-    card.innerHTML=\`<div class="flex items-center justify-between">
-        <div class="font-semibold">\${p.nickname?`\${p.nickname} (\${p.species})`:p.species}</div>
-        <span class="text-sm font-bold text-rose-900">$\${Number(p.price||0).toFixed(0)}</span>
-      </div>
-      <div class="text-xs mt-1 text-slate-700">\${p.owner}\${flags?' — '+flags:''}</div>
-      <div class="text-xs mt-1 text-slate-700">Lv \${p.level||'?'} • \${p.nature||''}</div>
-      \${p.moves?`<div class="text-xs mt-1 text-slate-700">Moves: \${p.moves}</div>`:''}
-      \${p.notes?`<div class="text-xs mt-1 text-slate-700">\${p.notes}</div>`:''}\`;
-    grid.appendChild(card);
-  }
-  const content=document.getElementById('content'); content.innerHTML=''; content.appendChild(wrap);
-}
-
-function render(){ const view=parseHash().view; if(view==='pokemon') renderPokemon(); else renderItems(); }
-
-document.getElementById('btnRequests').addEventListener('click', ()=>{
-  const cfg=loadCfg(); const live = !!cfg.cfg && !!cfg.shopId;
-  document.getElementById('reqBody').textContent = live
-    ? 'Requests are enabled. Use the admin page to review them.'
-    : 'Requests will be enabled after Firebase is connected. For now, DM Yerttty or Jonfiin on Discord to request price changes, items, or supplier info.';
-  document.getElementById('reqDlg').showModal();
-});
 document.getElementById('q').addEventListener('input', render);
 document.getElementById('cat').addEventListener('change', render);
 document.getElementById('reset').addEventListener('click', ()=>{ document.getElementById('q').value=''; document.getElementById('cat').value='All'; render(); });
-document.getElementById('btnReload').addEventListener('click', ()=>{ location.reload(); });
-window.addEventListener('hashchange', render);
-
-(async()=>{
-  const connected = await connectIfPossible();
-  if(!connected){ await loadCsv(); }
-  render();
-})();
+document.getElementById('reloadBtn').addEventListener('click', boot);
+document.getElementById('reqBtn').addEventListener('click', ()=> document.getElementById('reqDialog').showModal());
 </script>
 </body>
 </html>
