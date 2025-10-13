@@ -3,58 +3,63 @@
 <head>
   <meta charset="utf-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
-  <title>🌸 JJBlossoms Shop</title>
+  <title>🌸 JJBlossoms Shop — Live</title>
   <meta name="theme-color" content="#0f172a"/>
-  <!-- Tailwind (CDN) -->
   <script src="https://cdn.tailwindcss.com"></script>
-  <!-- Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;700;900&family=Cinzel:wght@700&display=swap" rel="stylesheet">
-  <!-- SheetJS for Excel/CSV parsing in-browser -->
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+  <!-- Firebase (Compat CDN) -->
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
   <style>
     :root{ --ink:#0f172a; --paper:#f8fafc; --sakura:#fdeef4; }
     html,body{ height:100%; background:linear-gradient(180deg,var(--sakura),#fff); }
-    .brand{ font-family:'Cinzel','Noto Sans JP',system-ui,Segoe UI,Roboto,Helvetica,Arial; letter-spacing:.4px; }
-    .jp{ font-family:'Noto Sans JP',system-ui,Segoe UI,Roboto,Helvetica,Arial; }
-    .card{ border:1px solid rgb(226 232 240); border-radius:1rem; background:#fff; }
-    .btn{ @apply inline-flex items-center gap-2 px-4 py-2 rounded-2xl border shadow-sm; }
-    .btn-primary{ @apply bg-slate-900 text-white border-slate-900; }
-    .btn-outline{ @apply bg-white text-slate-900 border-slate-300; }
-    .btn-ghost{ @apply bg-transparent border-transparent text-slate-600; }
-    .input{ @apply w-full px-3 py-2 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-slate-300; }
-    /* subtle wave */
-    .hero{ position:relative; overflow:hidden; }
-    .hero:before{ content:""; position:absolute; inset:0; background-image:url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="160" height="160" viewBox="0 0 160 160" fill="none"><path d="M0 80c20-20 60-20 80 0s60 20 80 0v80H0V80z" fill="%23fde2e4"/><path d="M0 64c20-20 60-20 80 0s60 20 80 0v16c-20 20-60 20-80 0s-60-20-80 0V64z" fill="%23fbcfe8" opacity=".5"/></svg>'); opacity:.35; background-size:160px 160px; }
+    .brand{ font-family:'Cinzel','Noto Sans JP',system-ui,Segoe UI,Roboto,Helvetica,Arial }
+    .jp{ font-family:'Noto Sans JP',system-ui,Segoe UI,Roboto,Helvetica,Arial }
+    .card{ border:1px solid rgb(226 232 240); border-radius:1rem; background:#fff }
+    .btn{ display:inline-flex; align-items:center; gap:.5rem; padding:.5rem 1rem; border-radius:1rem; border:1px solid #cbd5e1; background:#fff }
+    .btn-ghost{ background:transparent; border-color:transparent; color:#475569 }
+    .input{ width:100%; padding:.5rem .75rem; border-radius:.75rem; border:1px solid #cbd5e1 }
+    .hero{ position:relative; overflow:hidden }
+    .hero:before{ content:""; position:absolute; inset:0; background-image:url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="160" height="160" viewBox="0 0 160 160" fill="none"><path d="M0 80c20-20 60-20 80 0s60 20 80 0v80H0V80z" fill="%23fde2e4"/><path d="M0 64c20-20 60-20 80 0s60 20 80 0v16c-20 20-60 20-80 0s-60-20-80 0V64z" fill="%23fbcfe8" opacity=".5"/></svg>'); opacity:.35; background-size:160px 160px }
+    .menu:hover .menu-panel{ display:block }
   </style>
 </head>
 <body>
   <header class="hero">
-    <div class="max-w-6xl mx-auto px-4 sm:px-6 py-8 relative">
-      <!-- Header banner (served directly so it works on GitHub Pages). Hide if missing. -->
-      <div id="headerBanner" class="rounded-2xl overflow-hidden border mb-4">
-        <img id="headerImg" src="./Header.jpg" class="w-full h-56 object-cover" alt="JJBlossoms header" onerror="this.closest('#headerBanner').classList.add('hidden')"/>
+    <div class="max-w-6xl mx-auto px-4 sm:px-6 py-4 sm:py-6 relative">
+      <div id="headerBanner" class="rounded-2xl overflow-hidden border mb-3">
+        <img id="headerImg" src="./Header.jpg" class="w-full h-48 sm:h-56 object-cover" alt="JJBlossoms header" onerror="this.closest('#headerBanner').classList.add('hidden')"/>
       </div>
-      <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+      <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3">
+        <div class="flex items-center gap-3">
+          <h1 class="brand text-2xl sm:text-3xl font-extrabold text-slate-900">🌸 JJBlossoms Shop</h1>
+          <nav class="relative menu">
+            <button class="btn">Pokémon For Sale ▾</button>
+            <div class="menu-panel hidden absolute z-20 mt-2 w-56 rounded-xl border bg-white shadow p-2">
+              <a href="#pokemon:Yerttty" class="block px-3 py-2 rounded-lg hover:bg-slate-100">Yerttty</a>
+              <a href="#pokemon:Jonfiin" class="block px-3 py-2 rounded-lg hover:bg-slate-100">Jonfiin</a>
+              <a href="#pokemon:All" class="block px-3 py-2 rounded-lg hover:bg-slate-100">All</a>
+            </div>
+          </nav>
+        </div>
         <div>
-          <h1 class="brand text-3xl sm:text-4xl font-extrabold text-slate-900">🌸 JJBlossoms Shop</h1>
-          <p class="jp text-slate-700">ようこそ — Welcome! Where deals bloom and <span class="font-bold">Mewtwo even shops here</span> ✨</p>
-          <p class="text-slate-600 mt-2 text-sm">Creators: <span class="font-semibold">Yerttty</span> & <span class="font-semibold">Jonfiin</span></p>
+          <p class="jp text-slate-700 text-sm">ようこそ — Welcome! Where deals bloom and <span class="font-bold">Mewtwo even shops here</span> ✨</p>
+          <p class="text-slate-600 mt-1 text-xs">Creators: <span class="font-semibold">Yerttty</span> & <span class="font-semibold">Jonfiin</span></p>
         </div>
-        <div class="flex flex-wrap items-center gap-2">
-          <!-- Upload/Export removed by request -->
-          <button id="reloadBtn" class="btn btn-outline">🔄 Reload data</button>
+        <div class="flex items-center gap-2">
+          <button id="reloadBtn" class="btn">🔄 Reload data</button>
+          <button id="openRequests" class="btn">💌 Requests</button>
         </div>
-      </div>
-      <div class="mt-5 card p-4">
-        <p class="text-sm text-slate-600">Intro: We stock all the essentials (and then some), keep prices fair, and we’ll <span class="font-semibold">buy your items at 85% of our listed price</span> — rounded to whole numbers. If we’re missing something, ping us and we’ll get it blooming in no time. 🌸</p>
       </div>
     </div>
   </header>
 
-  <main class="max-w-6xl mx-auto px-4 sm:px-6 py-6 space-y-6">
-    <!-- Controls -->
+  <!-- Controls -->
+  <main class="max-w-6xl mx-auto px-4 sm:px-6 py-6 space-y-6" id="view-items">
     <div class="card p-4">
       <div class="grid grid-cols-1 md:grid-cols-4 gap-3 items-end">
         <div class="md:col-span-2">
@@ -69,214 +74,190 @@
           <button id="resetFilters" class="btn btn-ghost">Reset</button>
         </div>
       </div>
-      <p class="text-xs text-slate-500 mt-2">Tip: Put your <code>shop.xlsx</code> (or <code>shop.csv</code>) next to this page in your GitHub Pages repo. The page will auto-load it.</p>
+      <p class="text-xs text-slate-500 mt-2">Data source: <span id="sourceTag">CSV</span></p>
     </div>
 
-    <!-- Results summary -->
     <div class="flex items-center justify-between">
       <div id="count" class="text-sm text-slate-600">0 items</div>
-      <div class="text-xs text-slate-500">Buy price = <span class="font-semibold">85%</span> of item price, rounded to a whole number.</div>
+      <div class="text-xs text-slate-500">Buy price = <span class="font-semibold">85%</span> of item price (rounded).</div>
     </div>
 
-    <!-- Items by category -->
     <div id="catalog" class="space-y-6"></div>
   </main>
+
+  <!-- Pokémon For Sale view -->
+  <main class="max-w-6xl mx-auto px-4 sm:px-6 py-6 space-y-4 hidden" id="view-pokemon">
+    <div class="flex items-center justify-between">
+      <h2 class="brand text-xl">Pokémon For Sale</h2>
+      <div class="text-xs text-slate-500">Source: <span id="pkSource">Firebase</span></div>
+    </div>
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3" id="pkGrid"></div>
+  </main>
+
+  <!-- Requests modal -->
+  <div id="reqModal" class="fixed inset-0 bg-black/40 hidden items-center justify-center p-4">
+    <div class="max-w-2xl w-full bg-white rounded-2xl p-4 space-y-3">
+      <div class="flex items-center justify-between">
+        <h3 class="brand text-lg">Requests</h3>
+        <button id="closeReq" class="btn">✖</button>
+      </div>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+        <!-- Price change request -->
+        <form id="formPrice" class="card p-3 space-y-2">
+          <div class="font-semibold">Request price change</div>
+          <select id="priceItem" class="input"></select>
+          <input id="priceWanted" class="input" type="number" placeholder="Suggested price"/>
+          <input id="priceContact" class="input" placeholder="Your contact (Discord/IGN)"/>
+          <textarea id="priceReason" class="input" placeholder="Reason (optional)"></textarea>
+          <button class="btn" type="submit">Send</button>
+        </form>
+        <!-- Item request -->
+        <form id="formItemReq" class="card p-3 space-y-2">
+          <div class="font-semibold">Request an item</div>
+          <input id="reqName" class="input" placeholder="Item name"/>
+          <input id="reqCat" class="input" placeholder="Category (optional)"/>
+          <input id="reqContact" class="input" placeholder="Your contact (Discord/IGN)"/>
+          <textarea id="reqNotes" class="input" placeholder="Notes (optional)"></textarea>
+          <button class="btn" type="submit">Send</button>
+        </form>
+        <!-- Supplier application -->
+        <form id="formSupplier" class="card p-3 space-y-2">
+          <div class="font-semibold">Apply to be a supplier / Looking to sell</div>
+          <input id="supName" class="input" placeholder="Your name / IGN"/>
+          <input id="supContact" class="input" placeholder="Contact (Discord/IGN)"/>
+          <textarea id="supItems" class="input" placeholder="What can you supply? (list items & qty)"></textarea>
+          <button class="btn" type="submit">Send</button>
+        </form>
+        <!-- Custom message -->
+        <form id="formCustom" class="card p-3 space-y-2">
+          <div class="font-semibold">Other message</div>
+          <input id="msgContact" class="input" placeholder="Your contact (Discord/IGN)"/>
+          <textarea id="msgBody" class="input" placeholder="Your message"></textarea>
+          <button class="btn" type="submit">Send</button>
+        </form>
+      </div>
+      <div class="text-xs text-slate-500">Only Yerttty & Jonfiin receive these (admin inbox). Optional Discord webhook alerts can be enabled.</div>
+    </div>
+  </div>
 
   <footer class="py-10 text-center text-slate-500 text-sm">
     <div class="brand">🌸 JJBlossoms — Where Mewtwo shops for deals</div>
   </footer>
 
   <script>
-    // ------- Config -------
+    // ====== CONFIG ======
     const BUY_RATE = 0.85; // 85%
-    // Files to try automatically (in repo root alongside index.html)
-    const AUTOFETCH_FILES = ["shop.xlsx", "shop.csv", "jjblossoms_inventory_2025-10-12(1).csv"]; // tries in order
-    // Sprites to rotate in category headings (use ./ relative paths so they work on GitHub Pages)
+    const AUTOFETCH_FILES = ["shop.xlsx", "shop.csv", "jjblossoms_inventory_2025-10-12(1).csv"]; // CSV/XLSX fallback for items
     const SPRITE_FILES = ["./1.png","./2.png","./3.png","./4.png","./5.png","./46.png","./76.png","./566.png"];
 
-    // ------- State -------
-    let RAW_ITEMS = []; // {name, category, price, stock?, notes?}
-    let VIEW_ITEMS = []; // computed and normalized
-    let CATEGORIES = new Set();
+    // >>> Using YOUR Firebase config <<<
+    const FIREBASE_CONFIG = {
+      apiKey: "AIzaSyAfvM_nSppUkYoRa1Bes2NuE-Bs8vTwcIE",
+      authDomain: "jjblossom-35083.firebaseapp.com",
+      databaseURL: "https://jjblossom-35083-default-rtdb.firebaseio.com",
+      projectId: "jjblossom-35083",
+      storageBucket: "jjblossom-35083.firebasestorage.app",
+      messagingSenderId: "480122553743",
+      appId: "1:480122553743:web:04bf017d5e16f28fd477fa",
+      measurementId: "G-GVCG3PTNVP"
+    };
+    const SHOP_ID = "jjblossoms"; // you can change this if you like
+    const DISCORD_WEBHOOK = ""; // optional
 
-    // ------- Utils -------
-    const el = sel => document.querySelector(sel);
-    const fmtInt = n => (Number.isFinite(n)? Math.round(n) : 0); // round to whole number
-    const cleanNumber = (v) => {
-      if (typeof v === 'number') return v;
-      if (typeof v !== 'string') return NaN;
-      return Number(v.replace(/[^0-9.\-]/g, ''));
-    }
+    // ====== STATE ======
+    let RAW_ITEMS = [], VIEW_ITEMS = [], CATEGORIES = new Set();
+    let POKEMON = []; // { id, owner, species, level, nature, price, notes }
+    const $ = (s)=>document.querySelector(s);
+    const fmtInt = (n)=> (Number.isFinite(n)? Math.round(n):0);
+    const cleanNumber = (v)=> typeof v==='number'? v: (typeof v==='string'? Number(v.replace(/[^0-9.\-]/g,'')): NaN);
 
     function detectHeaders(headers){
-      // Try to find best column indices for flexible spreadsheets
-      const map = {
-        name: ['name','item','item name','title'],
-        category: ['category','cat','type','group'],
-        price: ['price','sell','sell price','our price','listed price','amount'],
-        stock: ['stock','qty','quantity'],
-        notes: ['notes','desc','description']
-      };
-      const lower = headers.map(h => String(h||'').trim().toLowerCase());
-      const pick = (keys) => {
-        for (const k of keys){ const i = lower.findIndex(h => h === k); if (i !== -1) return i; }
-        for (const k of keys){ const i = lower.findIndex(h => h.includes(k)); if (i !== -1) return i; }
-        return -1;
-      };
-      return {
-        name: pick(map.name),
-        category: pick(map.category),
-        price: pick(map.price),
-        stock: pick(map.stock),
-        notes: pick(map.notes)
-      };
+      const map={name:['name','item','item name','title'],category:['category','cat','type','group'],price:['price','sell','sell price','our price','listed price','amount'],stock:['stock','qty','quantity'],notes:['notes','desc','description']};
+      const lower=headers.map(h=>String(h||'').trim().toLowerCase());
+      const pick=keys=>{for(const k of keys){const i=lower.findIndex(h=>h===k); if(i!==-1) return i;} for(const k of keys){const i=lower.findIndex(h=>h.includes(k)); if(i!==-1) return i;} return -1;};
+      return {name:pick(map.name),category:pick(map.category),price:pick(map.price),stock:pick(map.stock),notes:pick(map.notes)};
     }
 
-    function computeItems(rows){
-      const out = [];
-      for (const r of rows){
-        const name = String(r.name||'').trim(); if (!name) continue;
-        const category = String(r.category||'').trim();
-        const price = cleanNumber(r.price);
-        const stock = r.stock === '' || r.stock == null ? '' : Number(r.stock);
-        const notes = String(r.notes||'').trim();
-        const buy = fmtInt((price||0) * BUY_RATE);
-        out.push({ name, category, price: fmtInt(price||0), buy, stock: Number.isFinite(stock)? stock: '', notes });
-      }
-      return out;
-    }
+    function computeItems(rows){ const out=[]; for(const r of rows){ const name=String(r.name||'').trim(); if(!name) continue; const category=String(r.category||'').trim(); const price=cleanNumber(r.price); const stock=r.stock===''||r.stock==null? '': Number(r.stock); const notes=String(r.notes||'').trim(); const buy=fmtInt((price||0)*BUY_RATE); out.push({name,category,price:fmtInt(price||0),buy,stock:Number.isFinite(stock)?stock:'',notes}); } return out; }
 
-    function groupByCategory(items){
-      const groups = {};
-      for (const it of items){ const key = it.category || 'Other'; (groups[key] ||= []).push(it); }
-      const sortedCats = Object.keys(groups).sort((a,b)=> a.localeCompare(b));
-      for (const c of sortedCats){ groups[c].sort((a,b)=> a.name.localeCompare(b.name)); }
-      return { groups, sortedCats };
-    }
+    function groupByCategory(items){ const groups={}; for(const it of items){ const key=it.category||'Other'; (groups[key] ||= []).push(it);} const sortedCats=Object.keys(groups).sort((a,b)=>a.localeCompare(b)); for(const c of sortedCats){ groups[c].sort((a,b)=>a.name.localeCompare(b.name)); } return {groups,sortedCats}; }
 
-    function render(){
-      const catalog = el('#catalog'); catalog.innerHTML = '';
-      const q = el('#searchInput').value.toLowerCase().trim();
-      const chosenCat = el('#categorySelect').value;
-      const sym = '$'; // hardcoded symbol as requested
-
-      let items = VIEW_ITEMS.filter(it =>
-        (chosenCat === 'All' || it.category === chosenCat || (chosenCat==='Other' && !it.category)) &&
-        (it.name.toLowerCase().includes(q) || (it.category||'').toLowerCase().includes(q) || (it.notes||'').toLowerCase().includes(q))
-      );
-
-      el('#count').textContent = `${items.length} item${items.length!==1?'s':''}`;
-      const { groups, sortedCats } = groupByCategory(items);
-
-      for (const cat of sortedCats){
-        const arr = groups[cat];
-        const sec = document.createElement('section');
-        sec.className = 'space-y-3';
-        const icon = SPRITE_FILES.length ? SPRITE_FILES[sortedCats.indexOf(cat)%SPRITE_FILES.length] : '';
-        sec.innerHTML = `
-          <div class="flex items-center justify-between mt-6">
-            <h2 class="jp text-xl font-bold flex items-center gap-2">
-              ${icon ? `<img src="${icon}" class="w-6 h-6" onerror="this.remove()"/>` : ''}
-              ${cat}
-            </h2>
-            <div class="text-xs text-slate-500">${arr.length} item${arr.length!==1?'s':''}</div>
+    function renderItems(){
+      const catalog=$('#catalog'); catalog.innerHTML='';
+      const q=$('#searchInput').value.toLowerCase().trim(); const chosen=$('#categorySelect').value; const sym='$';
+      let items=VIEW_ITEMS.filter(it=> (chosen==='All'||it.category===chosen||(chosen==='Other'&&!it.category)) && (it.name.toLowerCase().includes(q)||(it.category||'').toLowerCase().includes(q)||(it.notes||'').toLowerCase().includes(q)) );
+      $('#count').textContent=`${items.length} item${items.length!==1?'s':''}`; const {groups,sortedCats}=groupByCategory(items);
+      for(const cat of sortedCats){ const arr=groups[cat]; const sec=document.createElement('section'); sec.className='space-y-3'; const icon=SPRITE_FILES.length? SPRITE_FILES[sortedCats.indexOf(cat)%SPRITE_FILES.length]:''; sec.innerHTML=`
+        <div class="flex items-center justify-between mt-6">
+          <h2 class="jp text-xl font-bold flex items-center gap-2">${icon?`<img src="${icon}" class="w-6 h-6" onerror=\"this.remove()\"/>`:''}${cat}</h2>
+          <div class="text-xs text-slate-500">${arr.length} item${arr.length!==1?'s':''}</div>
+        </div>
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3"></div>`; const grid=sec.querySelector('div.grid');
+        for(const it of arr){ const card=document.createElement('div'); card.className='card p-4 hover:shadow-sm transition-shadow'; card.innerHTML=`
+          <div class="flex items-start justify-between gap-3">
+            <div>
+              <div class="font-semibold">${it.name}</div>
+              ${it.notes?`<div class="text-xs text-slate-500 mt-1">${it.notes}</div>`:''}
+            </div>
+            ${it.stock!==''?`<span class="px-2 py-1 rounded-full text-xs font-semibold bg-pink-100 text-pink-800">Stock: ${it.stock}</span>`:''}
           </div>
-          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3"></div>
-        `;
-        const grid = sec.querySelector('div.grid');
-        for (const it of arr){
-          const card = document.createElement('div');
-          card.className = 'card p-4 hover:shadow-sm transition-shadow';
-          card.innerHTML = `
-            <div class="flex items-start justify-between gap-3">
-              <div>
-                <div class="font-semibold">${it.name}</div>
-                ${it.notes? `<div class="text-xs text-slate-500 mt-1">${it.notes}</div>`: ''}
-              </div>
-              ${it.stock!==''? `<span class="px-2 py-1 rounded-full text-xs font-semibold bg-pink-100 text-pink-800">Stock: ${it.stock}</span>`: ''}
-            </div>
-            <div class="mt-3 grid grid-cols-2 gap-2 text-sm">
-              <div class="bg-pink-50 rounded-xl p-2">
-                <div class="text-slate-500 text-xs">Our Price</div>
-                <div class="font-bold">${sym}${it.price}</div>
-              </div>
-              <div class="bg-rose-100 rounded-xl p-2">
-                <div class="text-slate-500 text-xs">We Buy For (85%)</div>
-                <div class="font-bold">${sym}${it.buy}</div>
-              </div>
-            </div>
-          `;
-          grid.appendChild(card);
-        }
-        catalog.appendChild(sec);
-      }
+          <div class="mt-3 grid grid-cols-2 gap-2 text-sm">
+            <div class="bg-pink-50 rounded-xl p-2"><div class="text-slate-500 text-xs">Our Price</div><div class="font-bold">${sym}${it.price}</div></div>
+            <div class="bg-rose-100 rounded-xl p-2"><div class="text-slate-500 text-xs">We Buy For (85%)</div><div class="font-bold">${sym}${it.buy}</div></div>
+          </div>`; grid.appendChild(card);} catalog.appendChild(sec); }
     }
 
-    function refreshCategories(){
-      CATEGORIES = new Set(VIEW_ITEMS.map(i => i.category).filter(Boolean));
-      const sel = el('#categorySelect');
-      const current = sel.value;
-      sel.innerHTML = '';
-      const optAll = new Option('All','All'); sel.add(optAll);
-      [...CATEGORIES].sort((a,b)=>a.localeCompare(b)).forEach(c => sel.add(new Option(c,c)));
-      if (VIEW_ITEMS.some(i => !i.category)) sel.add(new Option('Other','Other'));
-      sel.value = current && [...sel.options].some(o=>o.value===current) ? current : 'All';
+    function refreshCategories(){ CATEGORIES=new Set(VIEW_ITEMS.map(i=>i.category).filter(Boolean)); const sel=$('#categorySelect'); const current=sel.value; sel.innerHTML=''; const optAll=new Option('All','All'); sel.add(optAll); [...CATEGORIES].sort((a,b)=>a.localeCompare(b)).forEach(c=>sel.add(new Option(c,c))); if(VIEW_ITEMS.some(i=>!i.category)) sel.add(new Option('Other','Other')); sel.value=current && [...sel.options].some(o=>o.value===current)? current:'All'; const priceSel=$('#priceItem'); if(priceSel){ priceSel.innerHTML=''; VIEW_ITEMS.forEach(i=> priceSel.add(new Option(i.name, i.name))); }
     }
 
-    function loadFromWorkbook(wb){
-      const ws = wb.Sheets[wb.SheetNames[0]]; // first sheet
-      const rows = XLSX.utils.sheet_to_json(ws, { header:1, raw:true });
-      if (!rows.length) return;
-      const headers = rows[0];
-      const map = detectHeaders(headers);
-      const body = rows.slice(1).map(r => ({
-        name: r[map.name],
-        category: r[map.category],
-        price: r[map.price],
-        stock: r[map.stock],
-        notes: r[map.notes]
-      }));
-      RAW_ITEMS = body;
-      VIEW_ITEMS = computeItems(RAW_ITEMS);
-      refreshCategories();
-      render();
+    function loadFromRows(rows){ RAW_ITEMS=rows; VIEW_ITEMS=computeItems(RAW_ITEMS); refreshCategories(); renderItems(); }
+
+    function loadFromWorkbook(wb){ const ws=wb.Sheets[wb.SheetNames[0]]; const rows=XLSX.utils.sheet_to_json(ws,{header:1,raw:true}); if(!rows.length){return;} const headers=rows[0]; const map=detectHeaders(headers); const body=rows.slice(1).map(r=>({name:r[map.name],category:r[map.category],price:r[map.price],stock:r[map.stock],notes:r[map.notes]})); loadFromRows(body); }
+
+    async function tryAutoFetchCSV(){ $('#sourceTag').textContent='CSV'; for(const fname of AUTOFETCH_FILES){ try{ const res=await fetch(fname,{cache:'no-store'}); if(!res.ok) continue; const blob=await res.blob(); if(fname.endsWith('.csv')){ const txt=await blob.text(); const wb=XLSX.read(txt,{type:'string'}); loadFromWorkbook(wb); return true; } else { const ab=await blob.arrayBuffer(); const wb=XLSX.read(ab,{type:'array'}); loadFromWorkbook(wb); return true; } }catch(e){} } return false; }
+
+    // ====== Firebase live read ======
+    let itemsRef=null, pokemonRef=null; async function tryFirebase(){ if(!FIREBASE_CONFIG||!FIREBASE_CONFIG.apiKey||!SHOP_ID){ return false; } try{ const app=firebase.apps.length? firebase.app(): firebase.initializeApp(FIREBASE_CONFIG); const auth=firebase.auth(); await auth.signInAnonymously(); const db=firebase.database(); itemsRef=db.ref(`/shops/${SHOP_ID}/items`); pokemonRef=db.ref(`/shops/${SHOP_ID}/pokemon`); itemsRef.on('value',snap=>{ const val=snap.val(); if(!val) return; const arr=Object.values(val).sort((a,b)=> (a.name||'').localeCompare(b.name||'')); const rows=arr.map(x=>({name:x.name,category:x.category,price:x.sellPrice ?? x.price, stock:x.stock ?? '', notes:x.notes??''})); $('#sourceTag').textContent='Firebase (Live)'; loadFromRows(rows); }); pokemonRef.on('value',snap=>{ const val=snap.val()||{}; POKEMON = Object.values(val).sort((a,b)=> (b._ts||0)-(a._ts||0)); if(location.hash.startsWith('#pokemon')) renderPokemon(); }); return true; } catch(e){ console.warn('firebase failed',e); return false; } }
+
+    function renderPokemon(){ const grid=$('#pkGrid'); grid.innerHTML=''; const sym='$'; const filter = (location.hash.split(':')[1]||'All'); const list = POKEMON.filter(p=> filter==='All' || (p.owner||'')===filter ); for(const p of list){ const card=document.createElement('div'); card.className='card p-4'; card.innerHTML=`
+        <div class="flex items-start justify-between gap-3">
+          <div>
+            <div class="font-semibold">${p.species||'Pokémon'} ${p.level?`Lv.${p.level}`:''}</div>
+            <div class="text-xs text-slate-500 mt-1">Nature: ${p.nature||'-'} ${p.owner?`• Seller: ${p.owner}`:''}</div>
+          </div>
+          <div class="px-2 py-1 rounded-full text-xs font-semibold bg-pink-100 text-pink-800">${sym}${Number(p.price||0).toFixed(0)}</div>
+        </div>
+        ${p.notes? `<div class="mt-2 text-sm text-slate-600">${p.notes}</div>`: ''}
+      `; grid.appendChild(card); }
     }
 
-    async function tryAutoFetch(){
-      for (const fname of AUTOFETCH_FILES){
-        try{
-          const res = await fetch(fname, { cache:'no-store' });
-          if (!res.ok) continue;
-          const blob = await res.blob();
-          if (fname.endsWith('.csv')){
-            const txt = await blob.text();
-            const wb = XLSX.read(txt, { type:'string' });
-            loadFromWorkbook(wb);
-            return true;
-          } else {
-            const ab = await blob.arrayBuffer();
-            const wb = XLSX.read(ab, { type:'array' });
-            loadFromWorkbook(wb);
-            return true;
-          }
-        }catch(e){ /* ignore and try next */ }
-      }
-      return false;
+    async function reload(){ const ok=await tryFirebase(); if(!ok){ await tryAutoFetchCSV(); } }
+
+    // ====== Requests ======
+    async function sendRequest(payload){ try{ if(FIREBASE_CONFIG&&SHOP_ID){ const db=firebase.database(); const ref=db.ref(`/shops/${SHOP_ID}/requests`).push(); await ref.set({ ...payload, _ts: Date.now() }); } if(DISCORD_WEBHOOK){ fetch(DISCORD_WEBHOOK,{ method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ content: `📨 **JJBlossoms Request** (${payload.type})\nFrom: ${payload.contact||'unknown'}\n${payload.item?('Item: '+payload.item+'\n'):''}${payload.body||''}` }) }).catch(()=>{}); } alert('Sent!'); document.querySelector('#reqModal').classList.add('hidden'); }catch(e){ alert('Failed to send'); }
     }
 
-    // ------- Wire up UI -------
-    el('#searchInput').addEventListener('input', render);
-    el('#categorySelect').addEventListener('change', render);
-    el('#resetFilters').addEventListener('click', () => {
-      el('#searchInput').value = '';
-      el('#categorySelect').value = 'All';
-      render();
-    });
+    document.querySelector('#openRequests').addEventListener('click', ()=> document.querySelector('#reqModal').classList.remove('hidden'));
+    document.querySelector('#closeReq').addEventListener('click', ()=> document.querySelector('#reqModal').classList.add('hidden'));
 
-    el('#reloadBtn').addEventListener('click', tryAutoFetch);
+    document.querySelector('#formPrice').addEventListener('submit', (e)=>{ e.preventDefault(); sendRequest({ type:'price_change', item: document.querySelector('#priceItem').value, wanted: Number(document.querySelector('#priceWanted').value||0), contact: document.querySelector('#priceContact').value, body: document.querySelector('#priceReason').value }); });
+    document.querySelector('#formItemReq').addEventListener('submit', (e)=>{ e.preventDefault(); sendRequest({ type:'item_request', item: document.querySelector('#reqName').value, category: document.querySelector('#reqCat').value, contact: document.querySelector('#reqContact').value, body: document.querySelector('#reqNotes').value }); });
+    document.querySelector('#formSupplier').addEventListener('submit', (e)=>{ e.preventDefault(); sendRequest({ type:'supplier', contact: document.querySelector('#supContact').value, body: `Name: ${document.querySelector('#supName').value}\nItems: ${document.querySelector('#supItems').value}` }); });
+    document.querySelector('#formCustom').addEventListener('submit', (e)=>{ e.preventDefault(); sendRequest({ type:'message', contact: document.querySelector('#msgContact').value, body: document.querySelector('#msgBody').value }); });
 
-    // Auto-load if files exist in same folder
-    tryAutoFetch();
+    // ====== Routing (items vs pokemon) ======
+    function route(){ const h=location.hash; if(h.startsWith('#pokemon')){ document.querySelector('#view-items').classList.add('hidden'); document.querySelector('#view-pokemon').classList.remove('hidden'); renderPokemon(); } else { document.querySelector('#view-pokemon').classList.add('hidden'); document.querySelector('#view-items').classList.remove('hidden'); } }
+    window.addEventListener('hashchange', route);
+
+    // Filters
+    document.querySelector('#searchInput').addEventListener('input', renderItems);
+    document.querySelector('#categorySelect').addEventListener('change', renderItems);
+    document.querySelector('#resetFilters').addEventListener('click', ()=>{ document.querySelector('#searchInput').value=''; document.querySelector('#categorySelect').value='All'; renderItems(); });
+    document.querySelector('#reloadBtn').addEventListener('click', reload);
+
+    // Boot
+    route();
+    reload();
   </script>
 </body>
 </html>
