@@ -67,6 +67,19 @@
           <select id="catItems" class="input"></select>
         </div>
       </div>
+
+      <!-- Quick add / update item -->
+      <div class="grid grid-cols-1 md:grid-cols-5 gap-2">
+        <input id="newName" class="input" placeholder="Item name">
+        <input id="newCat" class="input" placeholder="Category (e.g., DNA, Dungeon Frag)">
+        <input id="newPrice" class="input" placeholder="Sell price ($)">
+        <input id="newStock" class="input" placeholder="Stock (optional)">
+        <div class="flex gap-2">
+          <input id="newNotes" class="input" placeholder="Notes (optional)">
+          <button id="btnAddItem" class="btn">＋ Add / Update Item</button>
+        </div>
+      </div>
+
       <div class="overflow-auto rounded-2xl border">
         <table class="min-w-full text-sm">
           <thead class="bg-slate-50 sticky top-0"><tr class="text-left">
@@ -81,16 +94,23 @@
     <section class="card p-4 space-y-3">
       <div class="flex items-center justify-between">
         <h2 class="brand text-xl">Pokémon For Sale</h2>
-        <div class="flex items-center gap-2">
+        <div class="flex flex-wrap items-center gap-2">
           <select id="owner" class="input">
             <option>Yerttty</option>
             <option>Jonfiin</option>
           </select>
+          <input id="pkName" class="input" placeholder="Nickname (optional)">
           <input id="species" class="input" placeholder="Species">
           <input id="level" class="input" placeholder="Level">
           <input id="nature" class="input" placeholder="Nature">
+          <input id="tera" class="input" placeholder="Tera Type (optional)">
+          <input id="ball" class="input" placeholder="Caught Ball (optional)">
+          <input id="held" class="input" placeholder="Held Item (optional)">
+          <input id="ability" class="input" placeholder="Ability (optional)">
+          <input id="size" class="input" placeholder="Size (optional)">
+          <label class="flex items-center gap-2 text-sm"><input id="neutered" type="checkbox"> Neutered</label>
           <input id="price" class="input" placeholder="Price">
-          <input id="notes" class="input" placeholder="Notes (IVs/EVs/Size/Neutered/etc)">
+          <input id="notes" class="input" placeholder="Notes (IVs/EVs/Moves)">
           <button id="btnAddPk" class="btn">＋ Add / Update Pokémon</button>
         </div>
       </div>
@@ -155,10 +175,15 @@
     function mapHeaders(headers){
       const name = findIdx(headers,["name","item name","item","title"]);
       const cat  = findIdx(headers,["category","cat","type","group"]);
-      const price= findIdx(headers,["sell price","our price","price","listed price","amount","sell"],["buy"]);
+      const price= findIdx(headers,["sell price","sell_price","sellprice","our price","price","listed price","amount","sell"],["buy"]);
       const stock= findIdx(headers,["stock","qty","quantity","amount in stock"]);
       const notes= findIdx(headers,["notes","desc","description","note"]);
       return {name,cat,price,stock,notes};
+    }
+
+    function safeKey(s){
+      // Firebase RTDB keys cannot contain . # $ [ ] /
+      return String(s||'').replace(/[.#$\[\]/]/g,'_');
     }
 
     function rowsToItems(rows){
@@ -180,6 +205,7 @@
     }
 
     async function importCSVtoDB(){
+      if(!confirm('Import from CSV will overwrite items with the same name+category. Continue?')){return;}
       try{
         const res=await fetch(CSV_FILE,{cache:'no-store'}); if(!res.ok) return alert('shop.csv not found.');
         const text=await res.text();
@@ -187,7 +213,7 @@
         const rows=XLSX.utils.sheet_to_json(ws,{header:1,raw:true}); if(!rows.length) return alert('CSV empty');
         const items=rowsToItems(rows);
         const base=`shops/${shop}/items`;
-        const updates={}; items.forEach(it=>{ updates[`${base}/${it.id}`]=it; });
+        const updates={}; items.forEach(it=>{ const key=safeKey(it.id||it.key||''); updates[`${base}/${key}`]=Object.assign({},it,{key}); });
         await db.ref().update(updates);
         alert(`Imported ${items.length} items to Firebase ✓`);
         loadItems();
@@ -203,6 +229,38 @@
       loadItems();
     }
     $('#btnClearAll').addEventListener('click', clearAll);
+
+    // Quick add / update item handler
+    $('#btnAddItem').addEventListener('click', async ()=>{
+      const name=normalize($('#newName').value);
+      if(!name) return alert('Enter item name');
+      const category=normalize($('#newCat').value);
+      let price=Math.round(Number($('#newPrice').value)||0);
+      const buy=Math.round(price*BUY_RATE);
+      const stockRaw=normalize($('#newStock').value);
+      const hasStock=stockRaw!==''; const stock=hasStock? Number(stockRaw)||0: '';
+      const notes=normalize($('#newNotes').value);
+      const id=(name+'|'+category+'|'+Date.now()).toLowerCase();
+      const key=safeKey(id);
+      await db.ref(`shops/${shop}/items/${key}`).set({key,id,name,category,price,buy,stock,notes});
+      $('#newName').value=$('#newCat').value=$('#newPrice').value=$('#newStock').value=$('#newNotes').value='';
+      loadItems();
+    });
+
+    // Quick add item handler
+    document.getElementById('btnAddItem')?.addEventListener('click', async ()=>{
+      const name=normalize($('#newName').value); if(!name) return alert('Item name required');
+      const category=normalize($('#newCat').value);
+      const price=Math.round(Number($('#newPrice').value)||0);
+      const stockRaw=$('#newStock').value; const hasStock=String(stockRaw).trim()!==''; const stock=hasStock? Number(stockRaw)||0:'';
+      const notes=normalize($('#newNotes').value);
+      const id=(name+'|'+category).toLowerCase();
+      const key=safeKey(id);
+      const buy=Math.round(price*BUY_RATE);
+      await db.ref(`shops/${shop}/items/${key}`).update({key,id,name,category,price,buy,stock,notes});
+      ['newName','newCat','newPrice','newStock','newNotes'].forEach(id=> $('#'+id).value='');
+      loadItems();
+    });
 
     // ---- Items UI
     function fillCats(list){
@@ -221,21 +279,22 @@
         const tr=document.createElement('tr'); tr.innerHTML=`
           <td class="p-2">${it.name}</td>
           <td class="p-2">${it.category||''}</td>
-          <td class="p-2">${money(it.price)}</td>
+          <td class=\"p-2\"><input class=\"input\" style=\"max-width:8rem\" data-act=\"price\" data-id=\"${it.key||it.id}\" value=\"${Math.round(it.price||0)}\"></td>
           <td class="p-2">${money(it.buy)}</td>
           <td class="p-2">
-            <button class="btn" data-act="sub" data-id="${it.id}">−</button>
+            <button class="btn" data-act="sub" data-id="${it.key||it.id}">−</button>
             <span class="mx-2 align-middle">${it.stock===''?'':it.stock}</span>
-            <button class="btn" data-act="add" data-id="${it.id}">＋</button>
+            <button class="btn" data-act="add" data-id="${it.key||it.id}">＋</button>
           </td>
-          <td class="p-2"><input class="input" data-act="note" data-id="${it.id}" value="${it.notes||''}"></td>
+          <td class="p-2"><input class="input" data-act="note" data-id="${it.key||it.id}" value="${it.notes||''}"></td>
           <td class="p-2">
-            <button class="btn" data-act="del" data-id="${it.id}">Delete</button>
+            <button class="btn" data-act="del" data-id="${it.key||it.id}">Delete</button>
           </td>`;
         tb.appendChild(tr);
       });
       tb.querySelectorAll('button[data-act]').forEach(b=> b.addEventListener('click', onItemAction));
       tb.querySelectorAll('input[data-act="note"]').forEach(i=> i.addEventListener('change', onNoteChange));
+      tb.querySelectorAll('input[data-act="price"]').forEach(i=> i.addEventListener('change', onPriceChange));
     }
 
     async function onItemAction(e){
@@ -248,14 +307,39 @@
     }
     async function onNoteChange(e){ const id=e.currentTarget.dataset.id; const notes=e.currentTarget.value; await db.ref(`shops/${shop}/items/${id}`).update({notes}); }
 
+    async function onPriceChange(e){
+      const id=e.currentTarget.dataset.id;
+      let price=Math.round(Number(e.currentTarget.value)||0);
+      const buy=Math.round(price*BUY_RATE);
+      await db.ref(`shops/${shop}/items/${id}`).update({price,buy});
+      loadItems();
+    }/items/${id}`).update({notes}); }
+    async function onPriceChange(e){ const id=e.currentTarget.dataset.id; const price=Math.round(Number(e.currentTarget.value)||0); const buy=Math.round(price*BUY_RATE); await db.ref(`shops/${shop}/items/${id}`).update({price,buy}); loadItems(); }/items/${id}`).update({notes}); }
+
     function onItems(list){ fillCats(list); renderItems(list); }
 
     // ---- Pokémon
     async function addPokemon(){
-      const owner=$('#owner').value, species=normalize($('#species').value), level=normalize($('#level').value), nature=normalize($('#nature').value), price=Number($('#price').value)||0, notes=normalize($('#notes').value);
+      const owner=$('#owner').value,
+            nickname=normalize($('#pkName').value),
+            species=normalize($('#species').value),
+            level=normalize($('#level').value),
+            nature=normalize($('#nature').value),
+            tera=normalize($('#tera').value),
+            ball=normalize($('#ball').value),
+            held=normalize($('#held').value),
+            ability=normalize($('#ability').value),
+            size=normalize($('#size').value),
+            neutered=$('#neutered').checked,
+            price=Number($('#price').value)||0,
+            notes=normalize($('#notes').value);
       if(!species) return alert('Enter species');
       const id=(owner+'|'+species+'|'+Date.now()).toLowerCase();
-      await db.ref(`shops/${shop}/pokemon/${id}`).set({id,owner,species,level,nature,price:Math.round(price),notes,ts:Date.now()});
+      await db.ref(`shops/${shop}/pokemon/${id}`).set({id,owner,species,nickname,level,nature,tera,ball,held,ability,size,neutered,price:Math.round(price),notes,ts:Date.now()});
+      ['pkName','species','level','nature','tera','ball','held','ability','size','price','notes'].forEach(i=> $('#'+i).value='');
+      $('#neutered').checked=false;
+      loadPokemon();
+    }/pokemon/${id}`).set({id,owner,species,level,nature,price:Math.round(price),notes,ts:Date.now()});
       $('#species').value=$('#level').value=$('#nature').value=$('#price').value=$('#notes').value='';
       loadPokemon();
     }
@@ -265,7 +349,19 @@
       const tb=$('#rowsPk'); tb.innerHTML='';
       list.forEach(p=>{
         const tr=document.createElement('tr');
-        tr.innerHTML=`<td class="p-2">${p.owner}</td><td class="p-2">${p.species}</td><td class="p-2">${p.level||''}</td><td class="p-2">${p.nature||''}</td><td class="p-2">${money(p.price)}</td><td class="p-2">${p.notes||''}</td><td class="p-2"><button class="btn" data-pkdel="${p.id}">Delete</button></td>`;
+        const flags=[p.shiny?'✨ Shiny':null, p.neutered?'Neutered':null].filter(Boolean).join(' · ');
+        const extra=[p.tera?`Tera: ${p.tera}`:null,p.ball?`Ball: ${p.ball}`:null,p.held?`Held: ${p.held}`:null,p.ability?`Ability: ${p.ability}`:null,p.size?`Size: ${p.size}`:null].filter(Boolean).join(' · ');
+        tr.innerHTML=`<td class="p-2">${p.owner}</td>
+          <td class="p-2">${p.nickname?`${p.nickname} (${p.species})`:p.species}${flags?` — ${flags}`:''}</td>
+          <td class="p-2">${p.level||''}</td>
+          <td class="p-2">${p.nature||''}</td>
+          <td class="p-2">${money(p.price)}</td>
+          <td class="p-2">${[extra,p.notes||''].filter(Boolean).join(' | ')}</td>
+          <td class="p-2"><button class="btn" data-pkdel="${p.id}">Delete</button></td>`;
+        tb.appendChild(tr);
+      });
+      tb.querySelectorAll('button[data-pkdel]').forEach(b=> b.addEventListener('click', async (e)=>{ const id=e.currentTarget.dataset.pkdel; if(!confirm('Delete Pokémon?')) return; await db.ref(`shops/${shop}/pokemon/${id}`).remove(); loadPokemon(); }));
+    }</td><td class="p-2">${p.species}</td><td class="p-2">${p.level||''}</td><td class="p-2">${p.nature||''}</td><td class="p-2">${money(p.price)}</td><td class="p-2">${p.notes||''}</td><td class="p-2"><button class="btn" data-pkdel="${p.id}">Delete</button></td>`;
         tb.appendChild(tr);
       });
       tb.querySelectorAll('button[data-pkdel]').forEach(b=> b.addEventListener('click', async (e)=>{ const id=e.currentTarget.dataset.pkdel; if(!confirm('Delete Pokémon?')) return; await db.ref(`shops/${shop}/pokemon/${id}`).remove(); loadPokemon(); }));
