@@ -25,7 +25,6 @@
     .input{ width:100%; padding:.5rem .75rem; border-radius:.75rem; border:1px solid #cbd5e1 }
     .hero{ position:relative; overflow:hidden }
     .hero:before{ content:""; position:absolute; inset:0; background-image:url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="160" height="160" viewBox="0 0 160 160" fill="none"><path d="M0 80c20-20 60-20 80 0s60 20 80 0v80H0V80z" fill="%23fde2e4"/><path d="M0 64c20-20 60-20 80 0s60 20 80 0v16c-20 20-60 20-80 0s-60-20-80 0V64z" fill="%23fbcfe8" opacity=".5"/></svg>'); opacity:.35; background-size:160px 160px }
-    .menu:hover .menu-panel{ display:block }
   </style>
 </head>
 <body>
@@ -37,9 +36,10 @@
       <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3">
         <div class="flex items-center gap-3">
           <h1 class="brand text-2xl sm:text-3xl font-extrabold text-slate-900">🌸 JJBlossoms Shop</h1>
+          <!-- DROPDOWN (click to open) -->
           <nav class="relative menu">
-            <button class="btn">Pokémon For Sale ▾</button>
-            <div class="menu-panel hidden absolute z-20 mt-2 w-56 rounded-xl border bg-white shadow p-2">
+            <button id="pkBtn" class="btn">Pokémon For Sale ▾</button>
+            <div class="menu-panel hidden absolute z-50 mt-2 w-56 rounded-xl border bg-white shadow p-2 text-slate-800">
               <a href="#pokemon:Yerttty" class="block px-3 py-2 rounded-lg hover:bg-slate-100">Yerttty</a>
               <a href="#pokemon:Jonfiin" class="block px-3 py-2 rounded-lg hover:bg-slate-100">Jonfiin</a>
               <a href="#pokemon:All" class="block px-3 py-2 rounded-lg hover:bg-slate-100">All</a>
@@ -145,12 +145,11 @@
   </footer>
 
   <script>
-    // ====== CONFIG ======
+    // ====== CONFIG (your Firebase is pre-filled) ======
     const BUY_RATE = 0.85; // 85%
     const AUTOFETCH_FILES = ["shop.xlsx", "shop.csv", "jjblossoms_inventory_2025-10-12(1).csv"]; // CSV/XLSX fallback for items
     const SPRITE_FILES = ["./1.png","./2.png","./3.png","./4.png","./5.png","./46.png","./76.png","./566.png"];
 
-    // >>> Using YOUR Firebase config <<<
     const FIREBASE_CONFIG = {
       apiKey: "AIzaSyAfvM_nSppUkYoRa1Bes2NuE-Bs8vTwcIE",
       authDomain: "jjblossom-35083.firebaseapp.com",
@@ -161,12 +160,12 @@
       appId: "1:480122553743:web:04bf017d5e16f28fd477fa",
       measurementId: "G-GVCG3PTNVP"
     };
-    const SHOP_ID = "jjblossoms"; // you can change this if you like
+    const SHOP_ID = "jjblossoms"; // change if you want
     const DISCORD_WEBHOOK = ""; // optional
 
     // ====== STATE ======
     let RAW_ITEMS = [], VIEW_ITEMS = [], CATEGORIES = new Set();
-    let POKEMON = []; // { id, owner, species, level, nature, price, notes }
+    let POKEMON = [];
     const $ = (s)=>document.querySelector(s);
     const fmtInt = (n)=> (Number.isFinite(n)? Math.round(n):0);
     const cleanNumber = (v)=> typeof v==='number'? v: (typeof v==='string'? Number(v.replace(/[^0-9.\-]/g,'')): NaN);
@@ -248,6 +247,20 @@
     // ====== Routing (items vs pokemon) ======
     function route(){ const h=location.hash; if(h.startsWith('#pokemon')){ document.querySelector('#view-items').classList.add('hidden'); document.querySelector('#view-pokemon').classList.remove('hidden'); renderPokemon(); } else { document.querySelector('#view-pokemon').classList.add('hidden'); document.querySelector('#view-items').classList.remove('hidden'); } }
     window.addEventListener('hashchange', route);
+
+    // Dropdown toggling for Pokémon menu (click to open)
+    (() => {
+      const menu = document.querySelector('nav.menu');
+      if (!menu) return;
+      const btn = menu.querySelector('#pkBtn');
+      const panel = menu.querySelector('.menu-panel');
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        panel.classList.toggle('hidden');
+      });
+      document.addEventListener('click', () => panel.classList.add('hidden'));
+      window.addEventListener('hashchange', () => panel.classList.add('hidden'));
+    })();
 
     // Filters
     document.querySelector('#searchInput').addEventListener('input', renderItems);
