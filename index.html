@@ -22,6 +22,7 @@
     .hero{ position:relative; overflow:visible; }
     .hero:before{ content:""; position:absolute; inset:0; background-image:url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="160" height="160" viewBox="0 0 160 160" fill="none"><path d="M0 80c20-20 60-20 80 0s60 20 80 0v80H0V80z" fill="%23fde2e4"/><path d="M0 64c20-20 60-20 80 0s60 20 80 0v16c-20 20-60 20-80 0s-60-20-80 0V64z" fill="%23fbcfe8" opacity=".5"/></svg>'); opacity:.35; background-size:160px 160px; pointer-events:none }
     .menu-panel{ box-shadow:0 10px 30px rgba(0,0,0,.15); z-index:9999; }
+    .toast{ position:fixed; right:12px; bottom:12px; background:#0f172a; color:#fff; padding:.6rem .9rem; border-radius:.75rem; font-size:.9rem; z-index:10050; opacity:.95 }
   </style>
 </head>
 <body>
@@ -95,14 +96,14 @@
     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3" id="pkGrid"></div>
   </main>
 
-  <!-- Requests modal (CSV-only build just shows a simple alert) -->
-  <div id="reqModal" class="fixed inset-0 bg-black/40 hidden items-center justify-center p-4">
+  <!-- Requests modal (CSV-only): simple info modal -->
+  <div id="reqModal" class="fixed inset-0 bg-black/40 hidden flex items-center justify-center p-4 z-[10000]">
     <div class="max-w-2xl w-full bg-white rounded-2xl p-4 space-y-3">
       <div class="flex items-center justify-between">
         <h3 class="brand text-lg">Requests</h3>
         <button id="closeReq" class="btn">✖</button>
       </div>
-      <div class="text-sm text-slate-600">Requests will be enabled after Firebase is connected.</div>
+      <div class="text-sm text-slate-600">Requests will be enabled after Firebase is connected. For now, DM Yerttty or Jonfiin on Discord to request price changes, items, or supplier info.</div>
     </div>
   </div>
 
@@ -121,6 +122,8 @@
     const fmtInt=(n)=>Number.isFinite(n)?Math.round(n):0;
     const cleanNumber=(v)=> typeof v==='number'? v: (typeof v==='string'? Number(v.replace(/[^0-9.\-]/g,'')): NaN);
     const normalize=(h)=>String(h||'').trim().toLowerCase().replace(/\s+/g,' ');
+
+    function toast(msg){ const t=document.createElement('div'); t.className='toast'; t.textContent=msg; document.body.appendChild(t); setTimeout(()=>{ t.remove(); }, 2000); }
 
     function findHeaderIdx(headers, wanted, exclude=[]){
       const H=headers.map(normalize), bad=exclude.map(normalize);
@@ -213,17 +216,19 @@
     }
 
     async function loadCSV(){
-      $('#sourceTag').textContent='CSV';
-      for(const fname of CSV_CANDIDATES){
+      document.querySelector('#sourceTag').textContent='CSV';
+      for(const fname of [ ...CSV_CANDIDATES ]){
         try{
           const res = await fetch(fname,{cache:'no-store'});
           if(!res.ok) continue;
           const text = await res.text();
           const wb = XLSX.read(text,{type:'string'});
           loadFromWorkbook(wb);
+          toast(`Reloaded from ${fname} ✓`);
           return true;
         }catch(e){}
       }
+      toast('CSV not found');
       return false;
     }
 
@@ -251,6 +256,11 @@
       }
     }
     window.addEventListener('hashchange', route);
+
+    // Requests modal (CSV-only)
+    document.querySelector('#openRequests').addEventListener('click',()=> document.querySelector('#reqModal').classList.remove('hidden'));
+    document.querySelector('#closeReq').addEventListener('click',()=> document.querySelector('#reqModal').classList.add('hidden'));
+    document.addEventListener('keydown',(e)=>{ if(e.key==='Escape') document.querySelector('#reqModal').classList.add('hidden'); });
 
     document.querySelector('#searchInput').addEventListener('input', renderItems);
     document.querySelector('#categorySelect').addEventListener('change', renderItems);
