@@ -1,4 +1,4 @@
-<!doctype html>
+const idxPrice=headers.findIndex(h=>h.includes('sell_price')||h.includes('sell price')||h==='price'||h.includes('price')||h.includes('sell'));<!doctype html>
 <html lang="en">
 <head>
   <meta charset="utf-8"/>
@@ -86,18 +86,44 @@
           </div>
         </div>
         <form id="addPkForm" class="grid grid-cols-2 gap-3">
-          <select class="input" id="pkOwner" required><option>Yerttty</option><option>Jonfiin</option></select>
+          <select class="input" id="pkOwner" required><option>Yerttty<\/option><option>Jonfiin<\/option><\/select>
+          <input class="input" id="pkNickname" placeholder="Nickname (optional)">
           <input class="input" id="pkSpecies" placeholder="Species" required>
-          <input class="input" id="pkLevel" type="number" placeholder="Level" required>
+          <input class="input" id="pkLevel" type="number" min="1" placeholder="Level" required>
           <input class="input" id="pkNature" placeholder="Nature">
-          <input class="input" id="pkPrice" type="number" placeholder="Price" required>
-          <input class="input" id="pkBall" placeholder="Caught Ball (optional)">
-          <input class="input" id="pkAbility" placeholder="Ability (optional)">
+          <input class="input" id="pkPrice" type="number" min="0" placeholder="Price" required>
           <input class="input" id="pkTera" placeholder="Tera Type (optional)">
+          <input class="input" id="pkBall" placeholder="Caught Ball (optional)">
+          <input class="input" id="pkHeld" placeholder="Held Item (optional)">
+          <input class="input" id="pkAbility" placeholder="Ability (optional)">
+          <input class="input" id="pkSize" placeholder="Size (optional)">
+          <label class="flex items-center gap-2 text-sm"><input id="pkShiny" type="checkbox"> Shiny<\/label>
+          <label class="flex items-center gap-2 text-sm"><input id="pkNeutered" type="checkbox"> Neutered<\/label>
+
+          <div class="col-span-2 grid grid-cols-6 gap-2">
+            <div class="text-xs col-span-6 font-semibold">IVs (0–31) — set the first number, max is 31<\/div>
+            <input class="input" id="ivHP" type="number" min="0" max="31" placeholder="HP">
+            <input class="input" id="ivATK" type="number" min="0" max="31" placeholder="ATK">
+            <input class="input" id="ivDEF" type="number" min="0" max="31" placeholder="DEF">
+            <input class="input" id="ivSPA" type="number" min="0" max="31" placeholder="SP.ATK">
+            <input class="input" id="ivSPD" type="number" min="0" max="31" placeholder="SP.DEF">
+            <input class="input" id="ivSPE" type="number" min="0" max="31" placeholder="SPE">
+          <\/div>
+
+          <div class="col-span-2 grid grid-cols-6 gap-2">
+            <div class="text-xs col-span-6 font-semibold">EVs (0–252 each, optional)<\/div>
+            <input class="input" id="evHP" type="number" min="0" max="252" placeholder="HP">
+            <input class="input" id="evATK" type="number" min="0" max="252" placeholder="ATK">
+            <input class="input" id="evDEF" type="number" min="0" max="252" placeholder="DEF">
+            <input class="input" id="evSPA" type="number" min="0" max="252" placeholder="SP.ATK">
+            <input class="input" id="evSPD" type="number" min="0" max="252" placeholder="SP.DEF">
+            <input class="input" id="evSPE" type="number" min="0" max="252" placeholder="SPE">
+          <\/div>
+
           <input class="input col-span-2" id="pkMoves" placeholder="Moves (comma-separated)">
-          <textarea class="input col-span-2" id="pkNotes" placeholder="Notes (IVs/EVs/Size/Neutered etc.)"></textarea>
-          <button class="btn btn-primary col-span-2" type="submit">➕ Add / Update Pokémon</button>
-        </form>
+          <textarea class="input col-span-2" id="pkNotes" placeholder="Extra notes (optional)"><\/textarea>
+          <button class="btn btn-primary col-span-2" type="submit">➕ Add \/ Update Pokémon<\/button>
+        <\/form>
         <div class="overflow-auto rounded-2xl border">
           <table class="min-w-full text-sm">
             <thead class="bg-slate-50 sticky top-0"><tr class="text-left"><th class="p-3">Owner</th><th class="p-3">Species</th><th class="p-3">Lv.</th><th class="p-3">Nature</th><th class="p-3">Price</th><th class="p-3">Notes</th><th class="p-3">Actions</th></tr></thead>
@@ -146,9 +172,21 @@
         <td class="p-2"><button class="btn" data-act="delItem" data-id="${it.id}">Delete</button></td>`; tb.appendChild(tr); }
     }
 
-    function renderPk(){ const q=$('#qPk').value.toLowerCase(); const owner=$('#pkOwnerFilter').value; const tb=$('#rowsPk'); tb.innerHTML=''; const data=pokemon.filter(p=> (owner==='All'||p.owner===owner) && ((p.species||'').toLowerCase().includes(q)||(p.nature||'').toLowerCase().includes(q)||(p.notes||'').toLowerCase().includes(q)) );
-      for(const p of data){ const tr=document.createElement('tr'); tr.innerHTML=`
-        <td class="p-2">${p.owner||''}</td>
+    function renderPk(){ const q=$('#qPk').value.toLowerCase(); const owner=$('#pkOwnerFilter').value; const tb=$('#rowsPk'); tb.innerHTML=''; const data=pokemon.filter(p=> (owner==='All'||p.owner===owner) && ((p.species||'').toLowerCase().includes(q)||(p.nickname||'').toLowerCase().includes(q)||(p.nature||'').toLowerCase().includes(q)||(p.notes||'').toLowerCase().includes(q)) );
+      for(const p of data){ const flags=[p.shiny?'✨ Shiny':null,p.neutered?'Neutered':null].filter(Boolean).join(' · ');
+        const ivs=p.ivs?`IVs ${p.ivs.hp||0}/${p.ivs.atk||0}/${p.ivs.def||0}/${p.ivs.spa||0}/${p.ivs.spd||0}/${p.ivs.spe||0}`:'';
+        const evs=p.evs?`EVs ${p.evs.hp||0}/${p.evs.atk||0}/${p.evs.def||0}/${p.evs.spa||0}/${p.evs.spd||0}/${p.evs.spe||0}`:'';
+        const extras=[p.tera?`Tera: ${p.tera}`:null,p.ball?`Ball: ${p.ball}`:null,p.held?`Held: ${p.held}`:null,p.ability?`Ability: ${p.ability}`:null,p.size?`Size: ${p.size}`:null,ivs,evs].filter(Boolean).join(' · ');
+        const tr=document.createElement('tr'); tr.innerHTML=`
+          <td class="p-2">${p.owner||''}</td>
+          <td class="p-2">${p.nickname?`${p.nickname} (${p.species})`:p.species}${flags?` — ${flags}`:''}</td>
+          <td class="p-2">${p.level||''}</td>
+          <td class="p-2">${p.nature||''}</td>
+          <td class="p-2">$${Number(p.price||0).toFixed(0)}</td>
+          <td class="p-2"><div class="space-y-1">${extras}${p.moves?`<div>Moves: ${p.moves}</div>`:''}${p.notes?`<div>${p.notes}</div>`:''}</div></td>
+          <td class="p-2"><button class="btn" data-act="delPk" data-id="${p.id}">Delete</button></td>`;
+        tb.appendChild(tr); }
+    }</td>
         <td class="p-2">${p.species||''}</td>
         <td class="p-2">${p.level||''}</td>
         <td class="p-2">${p.nature||''}</td>
@@ -158,9 +196,29 @@
     }
 
     // Add/Update item
-    $('#addItemForm').addEventListener('submit', (e)=>{ e.preventDefault(); const name=$('#itemName').value.trim(); const category=$('#itemCat').value.trim(); const sell=Number($('#itemPrice').value||0); const stock=$('#itemStock').value===''? '': Number($('#itemStock').value); const notes=$('#itemNotes').value.trim(); const id=idify(name); patchItem(id,{ id, name, category, sellPrice:sell, stock, notes }); e.target.reset(); });
+    $('#addItemForm').addEventListener('submit', (e)=>{ e.preventDefault(); const name=$('#itemName').value.trim(); const category=$('#itemCat').value.trim(); const sell=Number($('#itemPrice').value||0); const stock=$('#itemStock').value===''? '': Number($('#itemStock').value); const notes=$('#itemNotes').value.trim(); const id=idify(name+'-'+category); const buyPrice=Math.round((sell||0)*BUY_RATE); patchItem(id,{ id, name, category, sellPrice:sell, buyPrice, stock, notes }); e.target.reset(); });
     // Add/Update Pokémon
-    $('#addPkForm').addEventListener('submit', (e)=>{ e.preventDefault(); const owner=$('#pkOwner').value; const species=$('#pkSpecies').value.trim(); const id=idify(owner+'-'+species+'-'+Date.now()); const level=Number($('#pkLevel').value||0); const nature=$('#pkNature').value.trim(); const price=Number($('#pkPrice').value||0); const ball=$('#pkBall').value.trim(); const ability=$('#pkAbility').value.trim(); const tera=$('#pkTera').value.trim(); const moves=$('#pkMoves').value.trim(); const notes=$('#pkNotes').value.trim(); patchPk(id,{ id, owner, species, level, nature, price, ball, ability, tera, moves, notes }); e.target.reset(); });
+    $('#addPkForm').addEventListener('submit', (e)=>{ e.preventDefault();
+      const owner=$('#pkOwner').value;
+      const nickname=$('#pkNickname').value.trim();
+      const species=$('#pkSpecies').value.trim();
+      const id=idify(owner+'-'+species+'-'+Date.now());
+      const level=Number($('#pkLevel').value||0);
+      const nature=$('#pkNature').value.trim();
+      const price=Number($('#pkPrice').value||0);
+      const tera=$('#pkTera').value.trim();
+      const ball=$('#pkBall').value.trim();
+      const held=$('#pkHeld').value.trim();
+      const ability=$('#pkAbility').value.trim();
+      const size=$('#pkSize').value.trim();
+      const shiny=$('#pkShiny').checked; const neutered=$('#pkNeutered').checked;
+      const ivs={ hp:Number($('#ivHP').value||0), atk:Number($('#ivATK').value||0), def:Number($('#ivDEF').value||0), spa:Number($('#ivSPA').value||0), spd:Number($('#ivSPD').value||0), spe:Number($('#ivSPE').value||0) };
+      const evs={ hp:Number($('#evHP').value||0), atk:Number($('#evATK').value||0), def:Number($('#evDEF').value||0), spa:Number($('#evSPA').value||0), spd:Number($('#evSPD').value||0), spe:Number($('#evSPE').value||0) };
+      const moves=$('#pkMoves').value.trim();
+      const notes=$('#pkNotes').value.trim();
+      patchPk(id,{ id, owner, nickname, species, level, nature, price, tera, ball, held, ability, size, shiny, neutered, ivs, evs, moves, notes });
+      e.target.reset();
+    }); const owner=$('#pkOwner').value; const species=$('#pkSpecies').value.trim(); const id=idify(owner+'-'+species+'-'+Date.now()); const level=Number($('#pkLevel').value||0); const nature=$('#pkNature').value.trim(); const price=Number($('#pkPrice').value||0); const ball=$('#pkBall').value.trim(); const ability=$('#pkAbility').value.trim(); const tera=$('#pkTera').value.trim(); const moves=$('#pkMoves').value.trim(); const notes=$('#pkNotes').value.trim(); patchPk(id,{ id, owner, species, level, nature, price, ball, ability, tera, moves, notes }); e.target.reset(); });
 
     // Inline edits & buttons
     document.addEventListener('input', (e)=>{ const t=e.target; if(t.matches('input[data-id]')){ const id=t.getAttribute('data-id'); const field=t.getAttribute('data-field'); let v=t.value; if(field==='stock'){ v = v===''? '': Number(v); } patchItem(id, { [field]: v }); } if(t.matches('input[data-pk-id]')){ const id=t.getAttribute('data-pk-id'); const field=t.getAttribute('data-field'); patchPk(id, { [field]: t.value }); } });
@@ -172,7 +230,7 @@
 
     // Import from shop.csv (same folder)
     $('#importCsv').addEventListener('click', async ()=>{
-      try{ const res=await fetch('shop.csv',{cache:'no-store'}); if(!res.ok) return alert('shop.csv not found'); const txt=await res.text(); const wb=XLSX.read(txt,{type:'string'}); const ws=wb.Sheets[wb.SheetNames[0]]; const rows=XLSX.utils.sheet_to_json(ws,{header:1,raw:true}); if(!rows.length) return alert('CSV empty'); const headers=rows[0].map(x=>String(x||'').toLowerCase()); const idxName=headers.findIndex(h=>h.includes('name')||h==='item'); const idxCat=headers.findIndex(h=>h.includes('cat')); const idxPrice=headers.findIndex(h=>h.includes('price')||h.includes('sell')); const idxStock=headers.findIndex(h=>h.includes('stock')); const idxNotes=headers.findIndex(h=>h.includes('notes')||h.includes('desc')); const body=rows.slice(1); for(const r of body){ const name=String(r[idxName]||'').trim(); if(!name) continue; const id=idify(name); patchItem(id,{ id, name, category:String(r[idxCat]||'').trim(), sellPrice:Number(r[idxPrice]||0), stock: r[idxStock]===''||r[idxStock]==null?'': Number(r[idxStock]), notes:String(r[idxNotes]||'').trim() }); } alert('Imported!'); }
+      try{ const res=await fetch('shop.csv',{cache:'no-store'}); if(!res.ok) return alert('shop.csv not found'); const txt=await res.text(); const wb=XLSX.read(txt,{type:'string'}); const ws=wb.Sheets[wb.SheetNames[0]]; const rows=XLSX.utils.sheet_to_json(ws,{header:1,raw:true}); if(!rows.length) return alert('CSV empty'); const headers=rows[0].map(x=>String(x||'').toLowerCase()); const idxName=headers.findIndex(h=>h.includes('name')||h==='item'); const idxCat=headers.findIndex(h=>h.includes('cat')); const idxPrice=headers.findIndex(h=>h.includes('price')||h.includes('sell')); const idxStock=headers.findIndex(h=>h.includes('stock')); const idxNotes=headers.findIndex(h=>h.includes('notes')||h.includes('desc')); const body=rows.slice(1); for(const r of body){ const name=String(r[idxName]||'').trim(); if(!name) continue; const category=String(r[idxCat]||'').trim(); const sell=Number(r[idxPrice]||0); const id=idify(name+'-'+category); patchItem(id,{ id, name, category, sellPrice:sell, buyPrice:Math.round(sell*BUY_RATE), stock: r[idxStock]===''||r[idxStock]==null?'': Number(r[idxStock]), notes:String(r[idxNotes]||'').trim() }); } alert('Imported!'); }
       catch(e){ console.error(e); alert('Import failed'); }
     });
 
