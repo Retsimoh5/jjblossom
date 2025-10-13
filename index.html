@@ -23,28 +23,30 @@
     .btn{ display:inline-flex; align-items:center; gap:.5rem; padding:.5rem 1rem; border-radius:1rem; border:1px solid #cbd5e1; background:#fff }
     .btn-ghost{ background:transparent; border-color:transparent; color:#475569 }
     .input{ width:100%; padding:.5rem .75rem; border-radius:.75rem; border:1px solid #cbd5e1 }
-    .hero{ position:relative; overflow:hidden }
-    .hero:before{ content:""; position:absolute; inset:0; background-image:url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="160" height="160" viewBox="0 0 160 160" fill="none"><path d="M0 80c20-20 60-20 80 0s60 20 80 0v80H0V80z" fill="%23fde2e4"/><path d="M0 64c20-20 60-20 80 0s60 20 80 0v16c-20 20-60 20-80 0s-60-20-80 0V64z" fill="%23fbcfe8" opacity=".5"/></svg>'); opacity:.35; background-size:160px 160px }
+    .hero{ position:relative; overflow:visible; } /* was hidden: now visible so dropdown isn't clipped */
+    .hero:before{ content:""; position:absolute; inset:0; background-image:url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="160" height="160" viewBox="0 0 160 160" fill="none"><path d="M0 80c20-20 60-20 80 0s60 20 80 0v80H0V80z" fill="%23fde2e4"/><path d="M0 64c20-20 60-20 80 0s60 20 80 0v16c-20 20-60 20-80 0s-60-20-80 0V64z" fill="%23fbcfe8" opacity=".5"/></svg>'); opacity:.35; background-size:160px 160px; pointer-events:none }
+    .menu-panel{ box-shadow:0 10px 30px rgba(0,0,0,.15); z-index:9999; } /* force on top */
   </style>
 </head>
 <body>
   <header class="hero">
     <div class="max-w-6xl mx-auto px-4 sm:px-6 py-4 sm:py-6 relative">
-      <div id="headerBanner" class="rounded-2xl overflow-hidden border mb-3">
+      <div id="headerBanner" class="rounded-2xl overflow-hidden border mb-3 relative z-10">
         <img id="headerImg" src="./Header.jpg" class="w-full h-48 sm:h-56 object-cover" alt="JJBlossoms header" onerror="this.closest('#headerBanner').classList.add('hidden')"/>
       </div>
-      <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3">
+      <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3 relative z-20">
         <div class="flex items-center gap-3">
           <h1 class="brand text-2xl sm:text-3xl font-extrabold text-slate-900">🌸 JJBlossoms Shop</h1>
-          <!-- DROPDOWN (click to open) -->
+          <!-- DROPDOWN (click to open, overlays everything) -->
           <nav class="relative menu">
             <button id="pkBtn" class="btn">Pokémon For Sale ▾</button>
-            <div class="menu-panel hidden absolute z-50 mt-2 w-56 rounded-xl border bg-white shadow p-2 text-slate-800">
+            <div class="menu-panel hidden absolute mt-2 w-56 rounded-xl border bg-white p-2 text-slate-800">
               <a href="#pokemon:Yerttty" class="block px-3 py-2 rounded-lg hover:bg-slate-100">Yerttty</a>
               <a href="#pokemon:Jonfiin" class="block px-3 py-2 rounded-lg hover:bg-slate-100">Jonfiin</a>
               <a href="#pokemon:All" class="block px-3 py-2 rounded-lg hover:bg-slate-100">All</a>
             </div>
           </nav>
+          <a id="homeBtn" href="#" class="btn">🏠 Home</a>
         </div>
         <div>
           <p class="jp text-slate-700 text-sm">ようこそ — Welcome! Where deals bloom and <span class="font-bold">Mewtwo even shops here</span> ✨</p>
@@ -60,7 +62,7 @@
 
   <!-- Controls -->
   <main class="max-w-6xl mx-auto px-4 sm:px-6 py-6 space-y-6" id="view-items">
-    <div class="card p-4">
+    <div class="card p-4 relative z-0">
       <div class="grid grid-cols-1 md:grid-cols-4 gap-3 items-end">
         <div class="md:col-span-2">
           <label class="text-xs text-slate-500">Search</label>
@@ -102,7 +104,6 @@
         <button id="closeReq" class="btn">✖</button>
       </div>
       <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
-        <!-- Price change request -->
         <form id="formPrice" class="card p-3 space-y-2">
           <div class="font-semibold">Request price change</div>
           <select id="priceItem" class="input"></select>
@@ -111,7 +112,6 @@
           <textarea id="priceReason" class="input" placeholder="Reason (optional)"></textarea>
           <button class="btn" type="submit">Send</button>
         </form>
-        <!-- Item request -->
         <form id="formItemReq" class="card p-3 space-y-2">
           <div class="font-semibold">Request an item</div>
           <input id="reqName" class="input" placeholder="Item name"/>
@@ -120,7 +120,6 @@
           <textarea id="reqNotes" class="input" placeholder="Notes (optional)"></textarea>
           <button class="btn" type="submit">Send</button>
         </form>
-        <!-- Supplier application -->
         <form id="formSupplier" class="card p-3 space-y-2">
           <div class="font-semibold">Apply to be a supplier / Looking to sell</div>
           <input id="supName" class="input" placeholder="Your name / IGN"/>
@@ -128,7 +127,6 @@
           <textarea id="supItems" class="input" placeholder="What can you supply? (list items & qty)"></textarea>
           <button class="btn" type="submit">Send</button>
         </form>
-        <!-- Custom message -->
         <form id="formCustom" class="card p-3 space-y-2">
           <div class="font-semibold">Other message</div>
           <input id="msgContact" class="input" placeholder="Your contact (Discord/IGN)"/>
@@ -145,9 +143,9 @@
   </footer>
 
   <script>
-    // ====== CONFIG (your Firebase is pre-filled) ======
-    const BUY_RATE = 0.85; // 85%
-    const AUTOFETCH_FILES = ["shop.xlsx", "shop.csv", "jjblossoms_inventory_2025-10-12(1).csv"]; // CSV/XLSX fallback for items
+    // ====== CONFIG ======
+    const BUY_RATE = 0.85;
+    const AUTOFETCH_FILES = ["shop.xlsx", "shop.csv", "jjblossoms_inventory_2025-10-12(1).csv"];
     const SPRITE_FILES = ["./1.png","./2.png","./3.png","./4.png","./5.png","./46.png","./76.png","./566.png"];
 
     const FIREBASE_CONFIG = {
@@ -160,10 +158,9 @@
       appId: "1:480122553743:web:04bf017d5e16f28fd477fa",
       measurementId: "G-GVCG3PTNVP"
     };
-    const SHOP_ID = "jjblossoms"; // change if you want
+    const SHOP_ID = "jjblossoms";
     const DISCORD_WEBHOOK = ""; // optional
 
-    // ====== STATE ======
     let RAW_ITEMS = [], VIEW_ITEMS = [], CATEGORIES = new Set();
     let POKEMON = [];
     const $ = (s)=>document.querySelector(s);
@@ -244,23 +241,21 @@
     document.querySelector('#formSupplier').addEventListener('submit', (e)=>{ e.preventDefault(); sendRequest({ type:'supplier', contact: document.querySelector('#supContact').value, body: `Name: ${document.querySelector('#supName').value}\nItems: ${document.querySelector('#supItems').value}` }); });
     document.querySelector('#formCustom').addEventListener('submit', (e)=>{ e.preventDefault(); sendRequest({ type:'message', contact: document.querySelector('#msgContact').value, body: document.querySelector('#msgBody').value }); });
 
-    // ====== Routing (items vs pokemon) ======
+    // ====== Routing (items vs pokemon)
     function route(){ const h=location.hash; if(h.startsWith('#pokemon')){ document.querySelector('#view-items').classList.add('hidden'); document.querySelector('#view-pokemon').classList.remove('hidden'); renderPokemon(); } else { document.querySelector('#view-pokemon').classList.add('hidden'); document.querySelector('#view-items').classList.remove('hidden'); } }
     window.addEventListener('hashchange', route);
 
-    // Dropdown toggling for Pokémon menu (click to open)
+    // Dropdown toggle (click)
     (() => {
-      const menu = document.querySelector('nav.menu');
-      if (!menu) return;
-      const btn = menu.querySelector('#pkBtn');
-      const panel = menu.querySelector('.menu-panel');
-      btn.addEventListener('click', (e) => {
-        e.stopPropagation();
-        panel.classList.toggle('hidden');
-      });
+      const menu = document.querySelector('nav.menu'); if (!menu) return;
+      const btn = menu.querySelector('#pkBtn'); const panel = menu.querySelector('.menu-panel');
+      btn.addEventListener('click', (e) => { e.stopPropagation(); panel.classList.toggle('hidden'); });
       document.addEventListener('click', () => panel.classList.add('hidden'));
       window.addEventListener('hashchange', () => panel.classList.add('hidden'));
     })();
+
+    // Home button
+    document.querySelector('#homeBtn').addEventListener('click', (e)=>{ e.preventDefault(); location.hash=''; route(); });
 
     // Filters
     document.querySelector('#searchInput').addEventListener('input', renderItems);
