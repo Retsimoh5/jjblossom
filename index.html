@@ -230,7 +230,10 @@
     async function reload(){ const ok=await tryFirebase(); if(!ok){ await tryAutoFetchCSV(); } }
 
     // ====== Requests ======
-    async function sendRequest(payload){ try{ if(FIREBASE_CONFIG&&SHOP_ID){ const db=firebase.database(); const ref=db.ref(`/shops/${SHOP_ID}/requests`).push(); await ref.set({ ...payload, _ts: Date.now() }); } if(DISCORD_WEBHOOK){ fetch(DISCORD_WEBHOOK,{ method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ content: `📨 **JJBlossoms Request** (${payload.type})\nFrom: ${payload.contact||'unknown'}\n${payload.item?('Item: '+payload.item+'\n'):''}${payload.body||''}` }) }).catch(()=>{}); } alert('Sent!'); document.querySelector('#reqModal').classList.add('hidden'); }catch(e){ alert('Failed to send'); }
+    async function sendRequest(payload){ try{ if(FIREBASE_CONFIG&&SHOP_ID){ const db=firebase.database(); const ref=db.ref(`/shops/${SHOP_ID}/requests`).push(); await ref.set({ ...payload, _ts: Date.now() }); } if(DISCORD_WEBHOOK){ fetch(DISCORD_WEBHOOK,{ method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ content: `📨 **JJBlossoms Request** (${payload.type})
+From: ${payload.contact||'unknown'}
+${payload.item?('Item: '+payload.item+'
+'):''}${payload.body||''}` }) }).catch(()=>{}); } alert('Sent!'); document.querySelector('#reqModal').classList.add('hidden'); }catch(e){ alert('Failed to send'); }
     }
 
     document.querySelector('#openRequests').addEventListener('click', ()=> document.querySelector('#reqModal').classList.remove('hidden'));
@@ -238,7 +241,8 @@
 
     document.querySelector('#formPrice').addEventListener('submit', (e)=>{ e.preventDefault(); sendRequest({ type:'price_change', item: document.querySelector('#priceItem').value, wanted: Number(document.querySelector('#priceWanted').value||0), contact: document.querySelector('#priceContact').value, body: document.querySelector('#priceReason').value }); });
     document.querySelector('#formItemReq').addEventListener('submit', (e)=>{ e.preventDefault(); sendRequest({ type:'item_request', item: document.querySelector('#reqName').value, category: document.querySelector('#reqCat').value, contact: document.querySelector('#reqContact').value, body: document.querySelector('#reqNotes').value }); });
-    document.querySelector('#formSupplier').addEventListener('submit', (e)=>{ e.preventDefault(); sendRequest({ type:'supplier', contact: document.querySelector('#supContact').value, body: `Name: ${document.querySelector('#supName').value}\nItems: ${document.querySelector('#supItems').value}` }); });
+    document.querySelector('#formSupplier').addEventListener('submit', (e)=>{ e.preventDefault(); sendRequest({ type:'supplier', contact: document.querySelector('#supContact').value, body: `Name: ${document.querySelector('#supName').value}
+Items: ${document.querySelector('#supItems').value}` }); });
     document.querySelector('#formCustom').addEventListener('submit', (e)=>{ e.preventDefault(); sendRequest({ type:'message', contact: document.querySelector('#msgContact').value, body: document.querySelector('#msgBody').value }); });
 
     // ====== Routing (items vs pokemon)
