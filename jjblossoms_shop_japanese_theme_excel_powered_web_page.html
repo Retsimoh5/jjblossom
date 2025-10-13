@@ -1,0 +1,328 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>🌸 JJBlossoms Shop</title>
+  <meta name="theme-color" content="#0f172a"/>
+  <!-- Tailwind (CDN) -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Icons -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;700;900&family=Cinzel:wght@700&display=swap" rel="stylesheet">
+  <!-- SheetJS for reading Excel in the browser -->
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+  <style>
+    :root{ --ink:#0f172a; --rose:#f472b6; --sakura:#fdeef4; --paper:#f8fafc; }
+    html,body{ height:100%; background:linear-gradient(180deg,var(--sakura),#fff); }
+    .jp-title{ font-family:'Noto Sans JP', system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, 'Apple Color Emoji','Segoe UI Emoji'; }
+    .brand{ font-family:'Cinzel','Noto Sans JP',sans-serif; letter-spacing:0.5px; }
+    .card{ border:1px solid rgb(226 232 240); border-radius:1rem; background:#fff; }
+    .chip{ @apply px-2 py-1 rounded-full text-xs font-semibold bg-pink-100 text-pink-800; }
+    .btn{ @apply inline-flex items-center gap-2 px-4 py-2 rounded-2xl border shadow-sm; }
+    .btn-primary{ @apply bg-slate-900 text-white border-slate-900; }
+    .btn-outline{ @apply bg-white text-slate-900 border-slate-300; }
+    .btn-ghost{ @apply bg-transparent border-transparent text-slate-600; }
+    .input{ @apply w-full px-3 py-2 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-slate-300; }
+    /* subtle Japanese waves background for header */
+    .hero{ position:relative; overflow:hidden; }
+    .hero:before{ content:""; position:absolute; inset:0; background-image:url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="160" height="160" viewBox="0 0 160 160" fill="none"><path d="M0 80c20-20 60-20 80 0s60 20 80 0v80H0V80z" fill="%23fde2e4"/><path d="M0 64c20-20 60-20 80 0s60 20 80 0v16c-20 20-60 20-80 0s-60-20-80 0V64z" fill="%23fbcfe8" opacity=".5"/></svg>'); opacity:.35; background-size:160px 160px; }
+  </style>
+</head>
+<body>
+  <header class="hero">
+    <div class=\"max-w-6xl mx-auto px-4 sm:px-6 py-8 relative\">
+      <div id=\"headerBanner\" class=\"rounded-2xl overflow-hidden border hidden mb-4\"> 
+        <img id=\"headerImg\" class=\"w-full h-56 object-cover\" alt=\"JJBlossoms header\"/>
+      </div>
+      <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+        <div>
+          <h1 class="brand text-3xl sm:text-4xl font-extrabold text-slate-900">🌸 JJBlossoms Shop</h1>
+          <p class="jp-title text-slate-700">ようこそ — Welcome! Where deals bloom and <span class="font-bold">Mewtwo even shops here</span> ✨</p>
+          <p class="text-slate-600 mt-2 text-sm">Creators: <span class="font-semibold">Yerttty</span> & <span class="font-semibold">Jonfiin</span></p>
+        </div>
+        <div class="flex flex-wrap items-center gap-2">
+          <label class="btn btn-outline cursor-pointer">
+            <input id="fileInput" type="file" accept=".xlsx,.xls,.csv" class="hidden" />
+            📥 Upload Excel/CSV
+          </label>
+          <button id="reloadBtn" class="btn btn-outline">🔄 Reload data</button>
+          <button id="exportBtn" class="btn btn-primary">⬇️ Export CSV</button>
+        </div>
+      </div>
+      <div class="mt-5 card p-4">
+        <p class="text-sm text-slate-600">Intro: We stock all the essentials (and then some), keep prices fair, and we’ll <span class="font-semibold">buy your items at 85% of our listed price</span> — rounded to whole numbers. If we’re missing something, ping us and we’ll get it blooming in no time. 🌸</p>
+      </div>
+    </div>
+  </header>
+
+  <main class="max-w-6xl mx-auto px-4 sm:px-6 py-6 space-y-6">
+    <!-- Controls -->
+    <div class="card p-4">
+      <div class="grid grid-cols-1 md:grid-cols-4 gap-3 items-end">
+        <div class="md:col-span-2">
+          <label class="text-xs text-slate-500">Search</label>
+          <input id="searchInput" class="input" placeholder="Search items, categories…" />
+        </div>
+        <div>
+          <label class="text-xs text-slate-500">Category</label>
+          <select id="categorySelect" class="input"></select>
+        </div>
+        <div class="flex items-center gap-2">
+          <div>
+            <label class="text-xs text-slate-500">Currency symbol</label>
+            <input id="currencyInput" class="input" placeholder="$ (optional)" />
+          </div>
+          <button id="resetFilters" class="btn btn-ghost">Reset</button>
+        </div>
+      </div>
+      <p class="text-xs text-slate-500 mt-2">Tip: Put your <code>shop.xlsx</code> (or <code>shop.csv</code>) next to this page in your GitHub Pages repo. The page will auto-load it. Or click “Upload Excel/CSV”.</p>
+    </div>
+
+    <!-- Results summary -->
+    <div class="flex items-center justify-between">
+      <div id="count" class="text-sm text-slate-600">0 items</div>
+      <div class="text-xs text-slate-500">Buy price = <span class="font-semibold">85%</span> of item price, rounded to a whole number.</div>
+    </div>
+
+    <!-- Items by category -->
+    <div id="catalog" class="space-y-6"></div>
+  </main>
+
+  <footer class="py-10 text-center text-slate-500 text-sm">
+    <div class="brand">🌸 JJBlossoms — Where Mewtwo shops for deals</div>
+  </footer>
+
+  <script>
+    // ------- Config -------
+    const BUY_RATE = 0.85; // 85%
+    const AUTOFETCH_FILES = ["shop.xlsx", "shop.csv", "jjblossoms_inventory_2025-10-12(1).csv"]; // will try in order from same folder
+
+    // ------- State -------
+    let RAW_ITEMS = []; // {name, category, price, stock?, notes?}
+    let VIEW_ITEMS = []; // computed with buy price and normalized fields
+    let CATEGORIES = new Set();
+
+    // Assets
+    const HEADER_FILES = ["Header.jpg", "Header.png"]; // place next to index.html
+    const SPRITE_FILES = ["1.png","2.png","3.png","4.png","5.png","46.png","76.png","566.png"]; // optional; rotate per category
+
+    // ------- Utils -------
+    const el = sel => document.querySelector(sel);
+    const fmtInt = n => (Number.isFinite(n)? Math.round(n) : 0);
+    const cleanNumber = (v) => {
+      if (typeof v === 'number') return v;
+      if (typeof v !== 'string') return NaN;
+      return Number(v.replace(/[^0-9.\-]/g, ''));
+    }
+
+    function detectHeaders(headers){
+      // map likely header names to normalized keys
+      const map = { name: ['name','item','item name','title'], category: ['category','cat','type','group'], price: ['price','sell','sell price','our price','listed price','amount'], stock:['stock','qty','quantity'], notes:['notes','desc','description'] };
+      const norm = {};
+      const lower = headers.map(h => String(h||'').trim().toLowerCase());
+      function pick(keys){
+        for (const k of keys){ const idx = lower.findIndex(h => h === k); if (idx !== -1) return idx; }
+        // loose contains search
+        for (const k of keys){ const idx = lower.findIndex(h => h.includes(k)); if (idx !== -1) return idx; }
+        return -1;
+      }
+      norm.name = pick(map.name);
+      norm.category = pick(map.category);
+      norm.price = pick(map.price);
+      norm.stock = pick(map.stock);
+      norm.notes = pick(map.notes);
+      return norm;
+    }
+
+    function computeItems(rows){
+      const out = [];
+      for (const r of rows){
+        const name = String(r.name||'').trim(); if(!name) continue;
+        const category = String(r.category||'').trim();
+        const price = cleanNumber(r.price);
+        const stock = r.stock === '' || r.stock == null ? '' : Number(r.stock);
+        const notes = String(r.notes||'').trim();
+        const buy = fmtInt((price||0) * BUY_RATE);
+        out.push({ name, category, price: fmtInt(price||0), buy, stock: Number.isFinite(stock)? stock: '', notes });
+      }
+      return out;
+    }
+
+    function groupByCategory(items){
+      const groups = {};
+      for (const it of items){ const key = it.category || 'Other'; (groups[key] ||= []).push(it); }
+      // sort by category name asc, then by name
+      const sortedCats = Object.keys(groups).sort((a,b)=> a.localeCompare(b));
+      for (const c of sortedCats){ groups[c].sort((a,b)=> a.name.localeCompare(b.name)); }
+      return { groups, sortedCats };
+    }
+
+    function render(){
+      // header image already handled by tryLoadHeader()
+
+      const catalog = el('#catalog'); catalog.innerHTML = '';
+      const q = el('#searchInput').value.toLowerCase().trim();
+      const chosenCat = el('#categorySelect').value;
+      const sym = el('#currencyInput').value.trim();
+
+      let items = VIEW_ITEMS.filter(it =>
+        (chosenCat === 'All' || it.category === chosenCat || (chosenCat==='Other' && !it.category)) &&
+        (it.name.toLowerCase().includes(q) || (it.category||'').toLowerCase().includes(q) || (it.notes||'').toLowerCase().includes(q))
+      );
+
+      el('#count').textContent = `${items.length} item${items.length!==1?'s':''}`;
+      const { groups, sortedCats } = groupByCategory(items);
+
+      for (const cat of sortedCats){
+        const arr = groups[cat];
+        const sec = document.createElement('section');
+        sec.className = 'space-y-3';
+        sec.innerHTML = `
+          <div class="flex items-center justify-between mt-6">
+            <h2 class=\"jp-title text-xl font-bold flex items-center gap-2\"><img src=\"\$\{(SPRITE_FILES[sortedCats.indexOf(cat)%SPRITE_FILES.length]||'')\}\" class=\"w-6 h-6\" onerror=\"this.style.display='none'\"/>\$\{cat\}<\/h2>
+            <div class="text-xs text-slate-500">${arr.length} item${arr.length!==1?'s':''}</div>
+          </div>
+          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+          </div>
+        `;
+        const grid = sec.querySelector('div.grid');
+        for (const it of arr){
+          const card = document.createElement('div');
+          card.className = 'card p-4 hover:shadow-sm transition-shadow';
+          card.innerHTML = `
+            <div class="flex items-start justify-between gap-3">
+              <div>
+                <div class="font-semibold">${it.name}</div>
+                ${it.notes? `<div class="text-xs text-slate-500 mt-1">${it.notes}</div>`: ''}
+              </div>
+              ${it.stock!==''? `<span class="chip">Stock: ${it.stock}</span>`: ''}
+            </div>
+            <div class="mt-3 grid grid-cols-2 gap-2 text-sm">
+              <div class="bg-pink-50 rounded-xl p-2">
+                <div class="text-slate-500 text-xs">Our Price</div>
+                <div class="font-bold">${sym}${it.price}</div>
+              </div>
+              <div class="bg-rose-100 rounded-xl p-2">
+                <div class="text-slate-500 text-xs">We Buy For (85%)</div>
+                <div class="font-bold">${sym}${it.buy}</div>
+              </div>
+            </div>
+          `;
+          grid.appendChild(card);
+        }
+        catalog.appendChild(sec);
+      }
+    }
+
+    function refreshCategories(){
+      CATEGORIES = new Set(VIEW_ITEMS.map(i => i.category).filter(Boolean));
+      const sel = el('#categorySelect');
+      const current = sel.value;
+      sel.innerHTML = '';
+      const optAll = new Option('All','All'); sel.add(optAll);
+      [...CATEGORIES].sort((a,b)=>a.localeCompare(b)).forEach(c => sel.add(new Option(c,c)));
+      // Add Other if any item has empty category
+      if (VIEW_ITEMS.some(i => !i.category)) sel.add(new Option('Other','Other'));
+      sel.value = current && [...sel.options].some(o=>o.value===current) ? current : 'All';
+    }
+
+    function loadFromWorkbook(wb){
+      const ws = wb.Sheets[wb.SheetNames[0]]; // first sheet
+      const rows = XLSX.utils.sheet_to_json(ws, { header:1, raw:true });
+      if (!rows.length) return;
+      const headers = rows[0];
+      const map = detectHeaders(headers);
+      const body = rows.slice(1).map(r => ({
+        name: r[map.name],
+        category: r[map.category],
+        price: r[map.price],
+        stock: r[map.stock],
+        notes: r[map.notes]
+      }));
+      RAW_ITEMS = body;
+      VIEW_ITEMS = computeItems(RAW_ITEMS);
+      refreshCategories();
+      render();
+    }
+
+    async function tryAutoFetch(){
+      for (const fname of AUTOFETCH_FILES){
+        try{
+          const res = await fetch(fname, { cache:'no-store' });
+          if (!res.ok) continue;
+          const blob = await res.blob();
+          if (fname.endsWith('.csv')){
+            const txt = await blob.text();
+            const wb = XLSX.read(txt, { type:'string' });
+            loadFromWorkbook(wb);
+            return true;
+          } else {
+            const ab = await blob.arrayBuffer();
+            const wb = XLSX.read(ab, { type:'array' });
+            loadFromWorkbook(wb);
+            return true;
+          }
+        }catch(e){ /* ignore */ }
+      }
+      return false;
+    }
+
+    function exportCSV(){
+      const header = ["name","category","price","buy","stock","notes"];
+      const lines = [header.join(',')];
+      for (const it of VIEW_ITEMS){
+        const row = [it.name, it.category||'', it.price, it.buy, (it.stock==='')? '': it.stock, it.notes||''];
+        const esc = row.map(v => {
+          const s = String(v??'');
+          return (s.includes(',')||s.includes('\n')||s.includes('"'))? '"'+s.replaceAll('"','""')+'"' : s;
+        });
+        lines.push(esc.join(','));
+      }
+      const blob = new Blob([lines.join('\n')], {type:'text/csv;charset=utf-8;'});
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a'); a.href=url; a.download='jjblossoms_export.csv'; document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
+    }
+
+    // Load header image if present
+    async function tryLoadHeader(){
+      const wrap = el('#headerBanner'); const img = el('#headerImg'); if(!wrap||!img) return;
+      for(const f of HEADER_FILES){
+        try{ const res = await fetch(f, {cache:'no-store'}); if(res.ok){ img.src = URL.createObjectURL(await res.blob()); wrap.classList.remove('hidden'); return; } }catch(e){}
+      }
+    }
+
+    // ------- Wire up UI -------
+    el('#fileInput').addEventListener('change', async (e) => {
+      const f = e.target.files[0]; if (!f) return;
+      if (f.name.endsWith('.csv')){
+        const txt = await f.text();
+        const wb = XLSX.read(txt, { type:'string' });
+        loadFromWorkbook(wb);
+      } else {
+        const ab = await f.arrayBuffer();
+        const wb = XLSX.read(ab, { type:'array' });
+        loadFromWorkbook(wb);
+      }
+    });
+
+    el('#searchInput').addEventListener('input', render);
+    el('#categorySelect').addEventListener('change', render);
+    el('#currencyInput').addEventListener('input', render);
+    el('#resetFilters').addEventListener('click', () => {
+      el('#searchInput').value = '';
+      el('#categorySelect').value = 'All';
+      el('#currencyInput').value = '';
+      render();
+    });
+
+    el('#exportBtn').addEventListener('click', exportCSV);
+    el('#reloadBtn').addEventListener('click', tryAutoFetch);
+
+    // Auto-load if files exist in same folder
+    tryLoadHeader();
+    tryAutoFetch();
+  </script>
+</body>
+</html>
