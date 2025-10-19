@@ -147,7 +147,7 @@
           <input class="input" id="evHP"  type="number" min="0" max="252" placeholder="HP">
           <input class="input" id="evATK" type="number" min="0" max="252" placeholder="ATK">
           <input class="input" id="evDEF" type="number" min="0" max="252" placeholder="DEF">
-          <input class="input" id="evSPA" type="number" min="0" max="252" placeholder="SP.ATK">
+          <input class="input" id="ivSPA" type="number" min="0" max="252" placeholder="SP.ATK">
           <input class="input" id="evSPD" type="number" min="0" max="252" placeholder="SP.DEF">
           <input class="input" id="evSPE" type="number" min="0" max="252" placeholder="SPE">
         </div>
@@ -347,7 +347,7 @@ document.getElementById('pkImg').addEventListener('change', (e)=>{
   const url=URL.createObjectURL(f); prev.src=url; prev.classList.remove('hidden');
 });
 
-/* add/update pokemon (with optional upload) — FIXED handler */
+/* add/update pokemon (with optional upload) — SOLID submit */
 document.getElementById('addPkForm').addEventListener('submit', async (e)=>{
   e.preventDefault();
   const owner=document.getElementById('pkOwner').value;
@@ -366,7 +366,7 @@ document.getElementById('addPkForm').addEventListener('submit', async (e)=>{
   const shiny=document.getElementById('pkShiny').checked;
   const neutered=document.getElementById('pkNeutered').checked;
   const ivs={hp:+(document.getElementById('ivHP').value||0),atk:+(document.getElementById('ivATK').value||0),def:+(document.getElementById('ivDEF').value||0),spa:+(document.getElementById('ivSPA').value||0),spd:+(document.getElementById('ivSPD').value||0),spe:+(document.getElementById('ivSPE').value||0)};
-  const evs={hp:+(document.getElementById('evHP').value||0),atk:+(document.getElementById('evATK').value||0),def:+(document.getElementById('evDEF').value||0),spa:+(document.getElementById('evSPA').value||0),spd:+(document.getElementById('evSPD').value||0),spe:+(document.getElementById('evSPE').value||0)};
+  const evs={hp:+(document.getElementById('evHP').value||0),atk:+(document.getElementById('evATK').value||0),def:+(document.getElementById('evDEF').value||0),spa:+(document.getElementById('ivSPA').value||0),spd:+(document.getElementById('evSPD').value||0),spe:+(document.getElementById('evSPE').value||0)};
   const moves=document.getElementById('pkMoves').value.trim();
   const notes=document.getElementById('pkNotes').value.trim();
 
@@ -414,80 +414,111 @@ document.addEventListener('click',(e)=>{
   if(t.dataset.act==='delPk'){ if(confirm('Delete Pokémon?')) removePk(id); }
 });
 
-/* ---------- requests table + detail modal ---------- */
-function fmtDate(ts){ try{const d=new Date(ts||0); return d.toLocaleString();}catch{return ''} }
+/* ---------- REQUESTS: tolerant reader + table ---------- */
+function normalizeReq(r){
+  const msg = r.message ?? r.msg ?? r.text ?? r.details ?? '';
+  const items = Array.isArray(r.items) ? r.items : (Array.isArray(r.cart) ? r.cart : []);
+  const normItems = items.map(it=>{
+    const name  = it.name ?? it.item ?? it.label ?? '';
+    const qty   = Number(it.qty ?? it.quantity ?? 1) || 0;
+    const price = Number(it.price ?? it.amount ?? 0) || 0;
+    return { name, qty, price, subtotal: qty * price };
+  });
+  const total = r.total ?? normItems.reduce((s,i)=> s + i.subtotal, 0);
+  const status = r.status || (r.closed ? 'closed' : 'open');
+  return { ...r, message: msg, items: normItems, total, status };
+}
 
 function renderReq(){
   const q=(document.getElementById('qReq')?.value||'').toLowerCase();
   const f=(document.getElementById('reqFilter')?.value||'All');
   const tb=document.getElementById('rowsReq'); if(!tb) return; tb.innerHTML='';
-  const data=requests.filter(r=>{
+  const list=(Array.isArray(requests)?requests:[]).map(normalizeReq);
+
+  const filtered=list.filter(r=>{
     const matchesQ = [r.ign,r.discord,r.type,r.message].join(' ').toLowerCase().includes(q);
-    const status = r.status || (r.closed?'closed':'open');
-    const typeOk = (f==='All') || (f==='open' && status==='open') || (f==='closed' && status==='closed') || (r.type===f);
+    const typeOk = (f==='All') ||
+                   (f==='open' && r.status==='open') ||
+                   (f==='closed' && r.status==='closed') ||
+                   (r.type===f || (f==='new' && r.type==='new-item'));
     return matchesQ && typeOk;
   });
-  for(const r of data){
+
+  for(const r of filtered){
     const summary = r.type==='sell'
-      ? `${(r.items||[]).length} items`
+      ? `${r.items.length} items`
       : (r.message ? (r.message.length>40 ? r.message.slice(0,40)+'…' : r.message) : '');
-    const total = r.type==='sell' ? (r.total|| (r.items||[]).reduce((s,i)=> s + (Number(i.price||0)*Number(i.qty||0)),0)) : '';
     const tr=document.createElement('tr');
     tr.innerHTML=`
-      <td class="p-2 whitespace-nowrap">${fmtDate(r.createdAt)}</td>
+      <td class="p-2 whitespace-nowrap">${new Date(r.createdAt||0).toLocaleString()}</td>
       <td class="p-2">${r.ign||''}</td>
       <td class="p-2">${r.discord||''}</td>
       <td class="p-2">${r.type||''}</td>
       <td class="p-2">${summary}</td>
-      <td class="p-2">${total?('$'+total):''}</td>
-      <td class="p-2">${r.status|| (r.closed?'closed':'open')}</td>
-      <td class="p-2">
-        <button class="btn" data-open-req="${r.id}">Open</button>
-      </td>`;
+      <td class="p-2">${r.type==='sell' && r.total ? ('$'+r.total) : ''}</td>
+      <td class="p-2">${r.status}</td>
+      <td class="p-2"><button class="btn" data-open-req="${r.id}">Open</button></td>`;
     tb.appendChild(tr);
   }
 }
 document.getElementById('qReq')?.addEventListener('input', renderReq);
 document.getElementById('reqFilter')?.addEventListener('change', renderReq);
 
+/* open modal with full details */
 document.addEventListener('click',(e)=>{
   const openId = e.target.getAttribute('data-open-req');
-  if(openId){
-    const r = requests.find(x=>x.id===openId);
-    if(!r) return;
-    const body = document.getElementById('reqBody');
-    const msgBlock = r.message ? `<div class="mt-2"><span class="font-semibold">Message:</span><div class="mt-1 whitespace-pre-wrap">${r.message}</div></div>` : '';
-    const itemsBlock = (r.type==='sell' && Array.isArray(r.items)) ? `
-      <div class="mt-3">
-        <div class="font-semibold mb-1">Selling items</div>
-        <div class="rounded-lg border overflow-hidden">
-          <table class="w-full text-sm">
-            <thead class="bg-slate-50"><tr><th class="p-2 text-left">Item</th><th class="p-2 text-left">Qty</th><th class="p-2 text-left">Price</th><th class="p-2 text-left">Subtotal</th></tr></thead>
-            <tbody>
-              ${r.items.map(i=>`<tr><td class="p-2">${i.name}</td><td class="p-2">${i.qty}</td><td class="p-2">$${i.price}</td><td class="p-2">$${Number(i.qty)*Number(i.price)}</td></tr>`).join('')}
-            </tbody>
-          </table>
-        </div>
-        <div class="text-right mt-2 font-semibold">Total: $${(r.items||[]).reduce((s,i)=> s + (Number(i.price||0)*Number(i.qty||0)),0)}</div>
-      </div>` : '';
+  if(!openId) return;
+  const raw = requests.find(x=>x.id===openId);
+  if(!raw) return;
+  const r = normalizeReq(raw);
 
-    body.innerHTML = `
-      <div class="text-sm text-slate-700">
-        <div><span class="font-semibold">When:</span> ${fmtDate(r.createdAt)}</div>
-        <div><span class="font-semibold">IGN:</span> ${r.ign||''}</div>
-        <div><span class="font-semibold">Discord:</span> ${r.discord||''}</div>
-        <div><span class="font-semibold">Type:</span> ${r.type||''}</div>
-        <div><span class="font-semibold">Status:</span> ${r.status|| (r.closed?'closed':'open')}</div>
-        ${msgBlock}
-        ${itemsBlock}
-      </div>
-    `;
-    document.getElementById('reqToggle').textContent = (r.status==='closed'||r.closed)?'Reopen':'Close';
-    document.getElementById('reqToggle').setAttribute('data-id', r.id);
-    document.getElementById('reqDelete').setAttribute('data-id', r.id);
-    document.getElementById('reqModal').classList.remove('hidden');
-    document.getElementById('reqModal').classList.add('flex');
-  }
+  const body = document.getElementById('reqBody');
+  const msgBlock = r.message
+    ? `<div class="mt-2">
+         <span class="font-semibold">Message:</span>
+         <div class="mt-1 whitespace-pre-wrap">${r.message}</div>
+       </div>` : '';
+
+  const itemsBlock = (r.type==='sell' && r.items.length)
+    ? `<div class="mt-3">
+         <div class="font-semibold mb-1">Selling items</div>
+         <div class="rounded-lg border overflow-hidden">
+           <table class="w-full text-sm">
+             <thead class="bg-slate-50">
+               <tr><th class="p-2 text-left">Item</th>
+                   <th class="p-2 text-left">Qty</th>
+                   <th class="p-2 text-left">Price</th>
+                   <th class="p-2 text-left">Subtotal</th></tr>
+             </thead>
+             <tbody>
+               ${r.items.map(i=>`<tr>
+                  <td class="p-2">${i.name}</td>
+                  <td class="p-2">${i.qty}</td>
+                  <td class="p-2">$${i.price}</td>
+                  <td class="p-2">$${i.subtotal}</td>
+                </tr>`).join('')}
+             </tbody>
+           </table>
+         </div>
+         <div class="text-right mt-2 font-semibold">Total: $${r.total}</div>
+       </div>` : '';
+
+  body.innerHTML = `
+    <div class="text-sm text-slate-700">
+      <div><span class="font-semibold">When:</span> ${new Date(r.createdAt||0).toLocaleString()}</div>
+      <div><span class="font-semibold">IGN:</span> ${r.ign||''}</div>
+      <div><span class="font-semibold">Discord:</span> ${r.discord||''}</div>
+      <div><span class="font-semibold">Type:</span> ${r.type||''}</div>
+      <div><span class="font-semibold">Status:</span> ${r.status}</div>
+      ${msgBlock}
+      ${itemsBlock}
+    </div>
+  `;
+  document.getElementById('reqToggle').textContent = (r.status==='closed'?'Reopen':'Close');
+  document.getElementById('reqToggle').setAttribute('data-id', r.id);
+  document.getElementById('reqDelete').setAttribute('data-id', r.id);
+  document.getElementById('reqModal').classList.remove('hidden');
+  document.getElementById('reqModal').classList.add('flex');
 });
 document.getElementById('reqClose').addEventListener('click', ()=>{
   document.getElementById('reqModal').classList.add('hidden');
@@ -535,10 +566,10 @@ document.getElementById('dlPkCsv').addEventListener('click', ()=>{
 /* Requests CSV */
 document.getElementById('dlReqCsv').addEventListener('click', ()=>{
   const rows=[['When','IGN','Discord','Type','Message','Items','Total','Status']];
-  for(const r of requests){
-    const itemsStr = r.type==='sell' ? (r.items||[]).map(i=>`${i.qty}x ${i.name} @ ${i.price}`).join('; ') : '';
-    const total = r.type==='sell' ? (r.total || (r.items||[]).reduce((s,i)=>s+i.qty*i.price,0)) : '';
-    rows.push([new Date(r.createdAt||0).toISOString(), r.ign||'', r.discord||'', r.type||'', r.message||'', itemsStr, total, r.status|| (r.closed?'closed':'open')]);
+  for(const r0 of requests){
+    const r=normalizeReq(r0);
+    const itemsStr = r.type==='sell' ? r.items.map(i=>`${i.qty}x ${i.name} @ ${i.price}`).join('; ') : '';
+    rows.push([new Date(r.createdAt||0).toISOString(), r.ign||'', r.discord||'', r.type||'', r.message||'', itemsStr, r.total||'', r.status|| 'open']);
   }
   const a=document.createElement('a');
   a.href=URL.createObjectURL(new Blob([rowsToCsv(rows)],{type:'text/csv'}));
