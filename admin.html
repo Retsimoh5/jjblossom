@@ -1,657 +1,271 @@
 <!doctype html>
 <html lang="en">
 <head>
-<meta charset="utf-8"/>
-<meta name="viewport" content="width=device-width, initial-scale=1"/>
-<title>🌸 JJBlossoms — Admin (LIVE)</title>
-<meta name="theme-color" content="#0f172a"/>
-
-<!-- UI -->
-<script src="https://cdn.tailwindcss.com"></script>
-<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;700;900&family=Cinzel:wght@700&display=swap" rel="stylesheet">
-<style>
-  .brand{ font-family:'Cinzel','Noto Sans JP',system-ui,Segoe UI,Roboto,Helvetica,Arial }
-  .input{ width:100%; padding:.5rem .75rem; border-radius:.75rem; border:1px solid #cbd5e1 }
-  .btn{ display:inline-flex; align-items:center; gap:.5rem; padding:.45rem .9rem; border-radius:.75rem; border:1px solid #cbd5e1; background:#fff }
-  .btn-primary{ background:#0f172a; color:#fff; border-color:#0f172a }
-  .card{ border:1px solid #e2e8f0; border-radius:1rem; background:#fff }
-  table input{ min-width:5rem }
-  .thumb{ width:56px; height:56px; object-fit:cover; border-radius:.5rem; border:1px solid #e5e7eb }
-</style>
-
-<!-- Firebase (compat) -->
-<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-storage-compat.js"></script>
-
-<!-- CSV helper -->
-<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>🌸 JJBlossoms — Admin (LIVE)</title>
+  <meta name="theme-color" content="#0f172a" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;700;900&family=Cinzel:wght@700&display=swap" rel="stylesheet">
+  <!-- Firebase (compat for simplicity) -->
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+  <style>
+    .brand{font-family:'Cinzel','Noto Sans JP',system-ui,Segoe UI,Roboto,Helvetica,Arial}
+    .input{width:100%;padding:.5rem .75rem;border-radius:.75rem;border:1px solid #cbd5e1}
+    .btn{display:inline-flex;align-items:center;gap:.5rem;padding:.45rem .9rem;border-radius:.75rem;border:1px solid #cbd5e1;background:#fff}
+    .btn-primary{background:#0f172a;color:#fff;border-color:#0f172a}
+    .card{border:1px solid #e2e8f0;border-radius:1rem;background:#fff}
+    .chip{font-size:.7rem;background:#0f172a0d;border:1px solid #e2e8f0;border-radius:999px;padding:.15rem .5rem}
+    table input{min-width:5rem}
+    dialog::backdrop{background:rgb(2 6 23/.55)}
+  </style>
 </head>
 <body class="bg-slate-50">
-<div class="max-w-7xl mx-auto p-4 sm:p-6 space-y-4">
-  <!-- Header / Config -->
-  <header class="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3">
-    <div>
-      <h1 class="brand text-2xl sm:text-3xl font-bold">🌸 JJBlossoms — Admin (LIVE)</h1>
-      <p class="text-slate-600 text-sm">Configure once below. Anonymous sign-in; edits sync to Firebase under your Shop ID.</p>
-    </div>
-    <div class="flex items-center gap-2">
-      <a href="./index.html" class="btn">🏠 Back to site</a>
-      <button id="saveCfg" class="btn">💾 Save config</button>
-      <button id="reload" class="btn">🔄 Reload</button>
-      <button id="signOut" class="btn">🚪 Sign out</button>
-    </div>
-  </header>
-
-  <section class="card p-4 space-y-3">
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
-      <input id="shopId" class="input" placeholder="Shop ID" value="jjblossoms">
-      <input id="cfgJson" class="input md:col-span-2" placeholder='Paste Firebase config JSON here'>
-    </div>
-    <div class="text-xs text-slate-500">
-      Firebase Console → Project settings → <b>General</b> → Your apps → Web → copy the config object.
-      Enable <b>Authentication → Anonymous</b>, <b>Realtime Database</b>, and <b>Storage</b>.
-    </div>
-    <div class="flex items-center gap-2 text-sm">
-      <div>Status:</div><div id="status" class="font-semibold text-slate-700">Not connected</div>
-    </div>
-
-    <div class="flex items-center flex-wrap gap-2">
-      <button id="importCsv" class="btn">📥 Import items from <b>shop.csv</b></button>
-
+  <div class="max-w-7xl mx-auto p-4 sm:p-6 space-y-4">
+    <header class="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3">
+      <div>
+        <h1 class="brand text-2xl sm:text-3xl font-bold">🌸 JJBlossoms — Admin</h1>
+        <p class="text-slate-600 text-sm">Connect once below, then edit items/stock and add Pokémon. Requests from the site show at the bottom.</p>
+      </div>
       <div class="flex items-center gap-2">
-        <label class="text-sm text-slate-600">Buy %</label>
-        <input id="buyPct" type="number" min="1" max="100" value="85" class="input w-24" />
-        <button id="recalc" class="btn">🧮 Recalculate buy prices</button>
+        <a class="btn" href="./index.html">🏠 Back to site</a>
+        <button id="saveCfg" class="btn">💾 Save config</button>
+        <button id="reload" class="btn">🔄 Reload</button>
+        <button id="signOut" class="btn">🚪 Sign out</button>
       </div>
+    </header>
 
-      <button id="dlItemsCsv" class="btn">⬇️ Download items CSV</button>
-      <button id="dlPkCsv" class="btn">⬇️ Download Pokémon CSV</button>
-      <button id="dlReqCsv" class="btn">⬇️ Download requests CSV</button>
-      <button id="clearAll" class="btn">🧹 Clear ALL items</button>
-    </div>
-  </section>
-
-  <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
-    <!-- Items -->
+    <!-- Config -->
     <section class="card p-4 space-y-3">
-      <div class="flex items-center justify-between">
-        <h2 class="brand text-xl">Items</h2>
-        <div class="flex items-center gap-2">
-          <input id="qItems" class="input" placeholder="Search items">
-          <select id="catItems" class="input"></select>
-        </div>
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+        <input id="shopId" class="input" placeholder="Shop ID (e.g., jjblossoms)" value="jjblossoms"/>
+        <input id="cfgJson" class="input md:col-span-2" placeholder='Paste Firebase config JSON here' />
       </div>
-
-      <form id="addItemForm" class="grid grid-cols-2 gap-3">
-        <input class="input" id="itemName" placeholder="Item name" required>
-        <input class="input" id="itemCat" placeholder="Category" required>
-        <input class="input" id="itemPrice" type="number" placeholder="Sell price ($)" required>
-        <input class="input" id="itemStock" type="number" placeholder="Stock (optional)">
-        <input class="input col-span-2" id="itemNotes" placeholder="Notes (optional)">
-        <button class="btn btn-primary col-span-2" type="submit">➕ Add / Update Item</button>
-      </form>
-
-      <div class="overflow-auto rounded-2xl border">
-        <table class="min-w-full text-sm">
-          <thead class="bg-slate-50 sticky top-0">
-            <tr class="text-left">
-              <th class="p-3">Name</th><th class="p-3">Category</th>
-              <th class="p-3">Sell</th><th class="p-3">Buy</th>
-              <th class="p-3">Stock</th><th class="p-3">Notes</th><th class="p-3">Actions</th>
-            </tr>
-          </thead>
-          <tbody id="rowsItems"></tbody>
-        </table>
+      <div class="text-xs text-slate-500">
+        Firebase Console → Project settings → General → Your apps → Web → copy the config object. Enable <b>Authentication → Anonymous</b> and <b>Realtime Database</b>.
+      </div>
+      <div class="flex items-center gap-2 text-sm"><div>Status:</div><div id="status" class="font-semibold text-slate-700">Not connected</div></div>
+      <div class="flex items-center gap-2 flex-wrap">
+        <button id="importCsv" class="btn">📥 Import items from <b>shop.csv</b></button>
+        <label class="flex items-center gap-2">🧮 Buy % <input id="buyPct" type="number" min="1" max="100" value="85" class="input w-20"/></label>
+        <button id="recalc" class="btn">↻ Recalculate buy prices</button>
+        <button id="exportCsv" class="btn">⬇️ Export items.csv</button>
       </div>
     </section>
 
-    <!-- Pokémon -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+      <!-- Items -->
+      <section class="card p-4 space-y-3">
+        <div class="flex items-center justify-between">
+          <h2 class="brand text-xl">Items</h2>
+          <div class="flex items-center gap-2">
+            <input id="qItems" class="input" placeholder="Search items"/>
+            <select id="catItems" class="input"></select>
+          </div>
+        </div>
+        <form id="addItemForm" class="grid grid-cols-2 gap-3">
+          <input class="input" id="itemName" placeholder="Item name" required>
+          <input class="input" id="itemCat" placeholder="Category" required>
+          <input class="input" id="itemPrice" type="number" placeholder="Sell price ($)" required>
+          <input class="input" id="itemStock" type="number" placeholder="Stock (optional)">
+          <input class="input col-span-2" id="itemNotes" placeholder="Notes (optional)">
+          <button class="btn btn-primary col-span-2" type="submit">➕ Add / Update Item</button>
+        </form>
+        <div class="overflow-auto rounded-2xl border">
+          <table class="min-w-full text-sm">
+            <thead class="bg-slate-50 sticky top-0"><tr class="text-left">
+              <th class="p-3">Name</th><th class="p-3">Category</th><th class="p-3">Sell</th><th class="p-3">Buy</th><th class="p-3">Stock</th><th class="p-3">Notes</th><th class="p-3">Actions</th>
+            </tr></thead>
+            <tbody id="rowsItems"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- Pokémon -->
+      <section class="card p-4 space-y-3">
+        <div class="flex items-center justify-between">
+          <h2 class="brand text-xl">Pokémon For Sale</h2>
+          <div class="flex items-center gap-2">
+            <select id="pkOwnerFilter" class="input"><option>All</option><option>Yerttty</option><option>Jonfiin</option></select>
+            <input id="qPk" class="input" placeholder="Search Pokémon">
+          </div>
+        </div>
+        <form id="addPkForm" class="grid grid-cols-2 gap-3">
+          <select class="input" id="pkOwner" required><option>Yerttty</option><option>Jonfiin</option></select>
+          <input class="input" id="pkNickname" placeholder="Nickname (optional)">
+          <input class="input" id="pkSpecies" placeholder="Species" required>
+          <input class="input" id="pkLevel" type="number" min="1" placeholder="Level" required>
+          <input class="input" id="pkNature" placeholder="Nature">
+          <input class="input" id="pkPrice" type="number" min="0" placeholder="Price ($)" required>
+          <input class="input" id="pkTera" placeholder="Tera Type (optional)">
+          <input class="input" id="pkBall" placeholder="Caught Ball (optional)">
+          <input class="input" id="pkHeld" placeholder="Held Item (optional)">
+          <input class="input" id="pkAbility" placeholder="Ability (optional)">
+          <input class="input" id="pkSize" placeholder="Size (optional)">
+          <label class="flex items-center gap-2 text-sm"><input id="pkShiny" type="checkbox"> Shiny</label>
+          <label class="flex items-center gap-2 text-sm"><input id="pkNeutered" type="checkbox"> Neutered</label>
+          <input class="input col-span-2" id="pkMoves" placeholder="Moves (comma-separated)">
+          <textarea class="input col-span-2" id="pkNotes" placeholder="Extra notes (IVs/EVs/Moves, etc.)"></textarea>
+          <button class="btn btn-primary col-span-2" type="submit">➕ Add / Update Pokémon</button>
+        </form>
+        <div class="overflow-auto rounded-2xl border">
+          <table class="min-w-full text-sm">
+            <thead class="bg-slate-50 sticky top-0"><tr class="text-left"><th class="p-3">Owner</th><th class="p-3">Species</th><th class="p-3">Lv.</th><th class="p-3">Nature</th><th class="p-3">Price</th><th class="p-3">Notes</th><th class="p-3">Actions</th></tr></thead>
+            <tbody id="rowsPk"></tbody>
+          </table>
+        </div>
+      </section>
+    </div>
+
+    <!-- Requests -->
     <section class="card p-4 space-y-3">
       <div class="flex items-center justify-between">
-        <h2 class="brand text-xl">Pokémon For Sale</h2>
+        <h2 class="brand text-xl">Requests (from site)</h2>
         <div class="flex items-center gap-2">
-          <select id="pkOwnerFilter" class="input"><option>All</option><option>Yerttty</option><option>Jonfiin</option></select>
-          <input id="qPk" class="input" placeholder="Search Pokémon">
+          <input id="qReq" class="input" placeholder="Search IGN/Discord">
+          <select id="statusReq" class="input"><option value="All">All</option><option value="open">open</option><option value="closed">closed</option></select>
         </div>
       </div>
-
-      <form id="addPkForm" class="grid grid-cols-2 gap-3">
-        <select class="input" id="pkOwner" required><option>Yerttty</option><option>Jonfiin</option></select>
-        <input class="input" id="pkNickname" placeholder="Nickname (optional)">
-        <input class="input" id="pkSpecies" placeholder="Species" required>
-        <input class="input" id="pkLevel" type="number" min="1" placeholder="Level" required>
-        <input class="input" id="pkNature" placeholder="Nature">
-        <input class="input" id="pkPrice" type="number" min="0" placeholder="Price ($)" required>
-        <input class="input" id="pkTera" placeholder="Tera Type (optional)">
-        <input class="input" id="pkBall" placeholder="Caught Ball (optional)">
-        <input class="input" id="pkHeld" placeholder="Held Item (optional)">
-        <input class="input" id="pkAbility" placeholder="Ability (optional)">
-        <input class="input" id="pkSize" placeholder="Size (optional)">
-        <label class="flex items-center gap-2 text-sm"><input id="pkShiny" type="checkbox"> Shiny</label>
-        <label class="flex items-center gap-2 text-sm"><input id="pkNeutered" type="checkbox"> Neutered</label>
-
-        <!-- IVs / EVs -->
-        <div class="col-span-2 grid grid-cols-6 gap-2">
-          <div class="text-xs col-span-6 font-semibold">IVs (0–31)</div>
-          <input class="input" id="ivHP" type="number" min="0" max="31" placeholder="HP">
-          <input class="input" id="ivATK" type="number" min="0" max="31" placeholder="ATK">
-          <input class="input" id="ivDEF" type="number" min="0" max="31" placeholder="DEF">
-          <input class="input" id="ivSPA" type="number" min="0" max="31" placeholder="SP.ATK">
-          <input class="input" id="ivSPD" type="number" min="0" max="31" placeholder="SP.DEF">
-          <input class="input" id="ivSPE" type="number" min="0" max="31" placeholder="SPE">
-        </div>
-        <div class="col-span-2 grid grid-cols-6 gap-2">
-          <div class="text-xs col-span-6 font-semibold">EVs (0–252 each, optional)</div>
-          <input class="input" id="evHP"  type="number" min="0" max="252" placeholder="HP">
-          <input class="input" id="evATK" type="number" min="0" max="252" placeholder="ATK">
-          <input class="input" id="evDEF" type="number" min="0" max="252" placeholder="DEF">
-          <input class="input" id="ivSPA" type="number" min="0" max="252" placeholder="SP.ATK">
-          <input class="input" id="evSPD" type="number" min="0" max="252" placeholder="SP.DEF">
-          <input class="input" id="evSPE" type="number" min="0" max="252" placeholder="SPE">
-        </div>
-
-        <input class="input col-span-2" id="pkMoves" placeholder="Moves (comma-separated)">
-        <textarea class="input col-span-2" id="pkNotes" placeholder="Extra notes (optional)"></textarea>
-
-        <!-- Image upload -->
-        <div class="col-span-2 flex items-center gap-3">
-          <input id="pkImg" type="file" accept="image/*" class="input">
-          <img id="pkPreview" class="thumb hidden" alt="preview">
-        </div>
-
-        <button class="btn btn-primary col-span-2" type="submit">➕ Add / Update Pokémon</button>
-      </form>
-
       <div class="overflow-auto rounded-2xl border">
         <table class="min-w-full text-sm">
-          <thead class="bg-slate-50 sticky top-0">
-            <tr class="text-left">
-              <th class="p-3">Owner</th><th class="p-3">Image</th><th class="p-3">Species</th><th class="p-3">Lv.</th>
-              <th class="p-3">Nature</th><th class="p-3">Price</th><th class="p-3">Notes</th><th class="p-3">Actions</th>
-            </tr>
-          </thead>
-          <tbody id="rowsPk"></tbody>
+          <thead class="bg-slate-50 sticky top-0"><tr class="text-left"><th class="p-3">When</th><th class="p-3">IGN</th><th class="p-3">Discord</th><th class="p-3">Type</th><th class="p-3">Summary</th><th class="p-3">Total</th><th class="p-3">Status</th><th class="p-3">Actions</th></tr></thead>
+          <tbody id="rowsReq"></tbody>
         </table>
       </div>
+      <p class="text-xs text-slate-500">Edits save instantly. Export CSV any time for a backup (shop.csv).</p>
     </section>
   </div>
 
-  <!-- Requests -->
-  <section class="card p-4 space-y-3">
-    <div class="flex items-center justify-between">
-      <h2 class="brand text-xl">Requests (from site)</h2>
-      <div class="flex items-center gap-2">
-        <input id="qReq" class="input" placeholder="Search IGN/Discord/type">
-        <select id="reqFilter" class="input">
-          <option value="All">All</option>
-          <option value="price">Price</option>
-          <option value="new">New Item</option>
-          <option value="sell">Sell Items</option>
-          <option value="other">Other</option>
-          <option value="open">Open only</option>
-          <option value="closed">Closed only</option>
-        </select>
-      </div>
-    </div>
-    <div class="overflow-auto rounded-2xl border">
-      <table class="min-w-full text-sm">
-        <thead class="bg-slate-50 sticky top-0">
-          <tr class="text-left">
-            <th class="p-3">When</th><th class="p-3">IGN</th><th class="p-3">Discord</th><th class="p-3">Type</th>
-            <th class="p-3">Summary</th><th class="p-3">Total</th><th class="p-3">Status</th><th class="p-3">Actions</th>
-          </tr>
-        </thead>
-        <tbody id="rowsReq"></tbody>
-      </table>
-    </div>
-  </section>
-
-  <!-- Request detail modal -->
-  <div id="reqModal" class="hidden fixed inset-0 bg-black/40 z-50 items-center justify-center p-4">
-    <div class="bg-white rounded-xl max-w-2xl w-full p-4">
+  <!-- Request modal -->
+  <dialog id="reqDlg" class="w-[min(720px,calc(100%-2rem))] rounded-2xl p-0">
+    <form method="dialog" class="p-4 space-y-3">
+      <div class="flex items-center justify-between"><h3 class="brand text-xl">Request details</h3><button class="btn">Close</button></div>
+      <div id="reqBody" class="space-y-3 text-sm"></div>
       <div class="flex items-center justify-between">
-        <h3 class="brand text-xl">Request Details</h3>
-        <button class="btn" id="reqClose">Close</button>
-      </div>
-      <div id="reqBody" class="mt-3 text-sm"></div>
-      <div class="mt-3 flex gap-2">
-        <button id="reqToggle" class="btn"></button>
-        <button id="reqDelete" class="btn">Delete</button>
-      </div>
-    </div>
-  </div>
-
-  <p class="text-xs text-slate-500">Edits save instantly. Export CSV any time for a backup (`shop.csv`).</p>
-</div>
-
-<script>
-/* ---------- constants, state ---------- */
-const $=(s)=>document.querySelector(s);
-const BUY_RATE_DEFAULT=85;
-let BUY_RATE=BUY_RATE_DEFAULT/100;
-
-let app,db,auth,storage,refItems,refPk,refReq;
-let items=[], pokemon=[], requests=[];
-
-/* ---------- localstorage cfg ---------- */
-const LS='jjb_admin_cfg_v2';
-const tryParse=(s)=>{try{return JSON.parse(s)}catch{return null}};
-const saveCfg=()=>localStorage.setItem(LS, JSON.stringify({ shopId:$('#shopId').value.trim(), cfg:tryParse($('#cfgJson').value) }));
-const loadCfg=()=>{ try{ const d=JSON.parse(localStorage.getItem(LS)||'{}'); if(d.shopId) $('#shopId').value=d.shopId; if(d.cfg) $('#cfgJson').value=JSON.stringify(d.cfg); return d; }catch{return {}} };
-const now=()=>Date.now();
-const idify=(s)=> (s||'').toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/(^-|-$)/g,'')||('id-'+Math.random().toString(36).slice(2,9));
-
-/* ---------- firebase connect ---------- */
-async function connect(){
-  const shop=$('#shopId').value.trim();
-  const cfg=tryParse($('#cfgJson').value);
-  if(!shop||!cfg){ $('#status').textContent='Missing config or Shop ID'; return; }
-  try{
-    app=firebase.apps.length? firebase.app(): firebase.initializeApp(cfg);
-    auth=firebase.auth();
-    await auth.signInAnonymously();
-    db=firebase.database();
-    storage=firebase.storage();
-
-    refItems=db.ref(`/shops/${shop}/items`);
-    refPk   =db.ref(`/shops/${shop}/pokemon`);
-    refReq  =db.ref(`/shops/${shop}/requests`);
-
-    $('#status').textContent='Connected ✓';
-
-    refItems.on('value',snap=>{ const v=snap.val()||{}; items=Object.values(v).sort((a,b)=>(a.category||'').localeCompare(b.category||'')|| (a.name||'').localeCompare(b.name||'')); renderItems(); fillItemCats(); });
-    refPk.on('value',snap=>{ const v=snap.val()||{}; pokemon=Object.values(v).sort((a,b)=>(a.owner||'').localeCompare(b.owner||'')|| (a.species||'').localeCompare(b.species||'')); renderPk(); });
-    refReq.on('value',snap=>{ const v=snap.val()||{}; requests=Object.values(v).sort((a,b)=>(b.createdAt||0)-(a.createdAt||0)); renderReq(); });
-  }catch(e){ console.error(e); $('#status').textContent='Error connecting'; }
-}
-
-/* ---------- db helpers ---------- */
-function patchItem(id,changes){ const cur=items.find(x=>x.id===id)||{id}; refItems.child(id).set({...cur,...changes,_ts:now(),id}).catch(console.error); }
-function removeItem(id){ refItems.child(id).remove().catch(console.error); }
-function patchPk(id,changes){ const cur=pokemon.find(x=>x.id===id)||{id}; refPk.child(id).set({...cur,...changes,_ts:now(),id}).catch(console.error); }
-function removePk(id){ refPk.child(id).remove().catch(console.error); }
-function patchReq(id,changes){ const cur=requests.find(x=>x.id===id)||{id}; refReq.child(id).set({...cur,...changes,_ts:now(),id}).catch(console.error); }
-function removeReq(id){ refReq.child(id).remove().catch(console.error); }
-
-/* ---------- items UI ---------- */
-function fillItemCats(){
-  const sel=$('#catItems'); const cur=sel.value;
-  const set=new Set(items.map(i=>i.category).filter(Boolean));
-  sel.innerHTML=''; sel.add(new Option('All','All'));
-  [...set].sort((a,b)=>a.localeCompare(b)).forEach(c=> sel.add(new Option(c,c)));
-  sel.value=[...sel.options].some(o=>o.value===cur)?cur:'All';
-}
-function renderItems(){
-  const q=($('#qItems').value||'').toLowerCase();
-  const cat=$('#catItems').value||'All';
-  const tb=$('#rowsItems'); tb.innerHTML='';
-  const data=items.filter(it=>(cat==='All'||it.category===cat) && (
-    (it.name||'').toLowerCase().includes(q) || (it.category||'').toLowerCase().includes(q) || (it.notes||'').toLowerCase().includes(q)
-  ));
-  for(const it of data){
-    const sell=Number(it.sellPrice??it.price??0);
-    const buy =Number.isFinite(Number(it.buyPrice))? Number(it.buyPrice) : Math.round(sell*BUY_RATE);
-    const tr=document.createElement('tr');
-    tr.innerHTML=`
-      <td class="p-2"><input class="input" value="${it.name||''}" data-id="${it.id}" data-field="name"></td>
-      <td class="p-2"><input class="input" value="${it.category||''}" data-id="${it.id}" data-field="category"></td>
-      <td class="p-2"><input class="input w-28" type="number" value="${sell||0}" data-id="${it.id}" data-field="sellPrice"></td>
-      <td class="p-2">$${buy}</td>
-      <td class="p-2 flex items-center gap-2">
-        <button class="btn" data-act="dec" data-id="${it.id}">−</button>
-        <input class="input w-20" value="${it.stock===''?'':it.stock}" data-id="${it.id}" data-field="stock">
-        <button class="btn" data-act="inc" data-id="${it.id}">+</button>
-      </td>
-      <td class="p-2"><input class="input" value="${it.notes||''}" data-id="${it.id}" data-field="notes"></td>
-      <td class="p-2"><button class="btn" data-act="delItem" data-id="${it.id}">Delete</button></td>`;
-    tb.appendChild(tr);
-  }
-}
-
-/* ---------- pokemon UI ---------- */
-function renderPk(){
-  const q=($('#qPk').value||'').toLowerCase();
-  const owner=$('#pkOwnerFilter').value;
-  const tb=$('#rowsPk'); tb.innerHTML='';
-  const data=pokemon.filter(p=>(owner==='All'||p.owner===owner) && (
-    (p.species||'').toLowerCase().includes(q) || (p.nickname||'').toLowerCase().includes(q) || (p.nature||'').toLowerCase().includes(q) || (p.notes||'').toLowerCase().includes(q)
-  ));
-  for(const p of data){
-    const extras=[p.tera?`Tera:${p.tera}`:null,p.ball?`Ball:${p.ball}`:null,p.held?`Held:${p.held}`:null,p.ability?`Ability:${p.ability}`:null,p.size?`Size:${p.size}`:null].filter(Boolean).join(' · ');
-    const tr=document.createElement('tr');
-    tr.innerHTML=`
-      <td class="p-2">${p.owner||''}</td>
-      <td class="p-2">${p.imageUrl?`<img src="${p.imageUrl}" class="thumb" />`:''}</td>
-      <td class="p-2">${p.nickname?`${p.nickname} (${p.species})`:p.species}</td>
-      <td class="p-2">${p.level||''}</td>
-      <td class="p-2">${p.nature||''}</td>
-      <td class="p-2">$${Number(p.price||0).toFixed(0)}</td>
-      <td class="p-2">
-        <div class="space-y-1">
-          ${extras?`<div>${extras}</div>`:''}
-          ${p.moves?`<div>Moves: ${p.moves}</div>`:''}
-          ${p.notes?`<div>${p.notes}</div>`:''}
+        <div class="space-x-2">
+          <button id="markClosed" type="button" class="btn">✅ Mark closed</button>
+          <button id="deleteReq" type="button" class="btn">🗑️ Delete</button>
         </div>
-      </td>
-      <td class="p-2"><button class="btn" data-act="delPk" data-id="${p.id}">Delete</button></td>`;
-    tb.appendChild(tr);
-  }
-}
+        <button class="btn">Done</button>
+      </div>
+    </form>
+  </dialog>
 
-/* image preview */
-document.getElementById('pkImg').addEventListener('change', (e)=>{
-  const f=e.target.files?.[0]; const prev=document.getElementById('pkPreview');
-  if(!f){ prev.classList.add('hidden'); prev.src=''; return; }
-  const url=URL.createObjectURL(f); prev.src=url; prev.classList.remove('hidden');
-});
+  <script>
+    // ---------- helpers ----------
+    const $=s=>document.querySelector(s);
+    const BUY_PCT=()=> Math.max(1, Math.min(100, Number($('#buyPct').value||85)))/100;
+    const fmtMoney = n => `$${Number(n||0).toFixed(0)}`;
+    const idify=s=>(s||'').toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/(^-|-$)/g,'')||('id-'+Math.random().toString(36).slice(2,9));
+    const now=()=>Date.now();
 
-/* add/update pokemon (with optional upload) — SOLID submit */
-document.getElementById('addPkForm').addEventListener('submit', async (e)=>{
-  e.preventDefault();
-  const owner=document.getElementById('pkOwner').value;
-  const nickname=document.getElementById('pkNickname').value.trim();
-  const species=document.getElementById('pkSpecies').value.trim();
-  if(!species){ alert('Species is required'); return; }
-  const id=idify(owner+'-'+species+'-'+Date.now());
-  const level=Number(document.getElementById('pkLevel').value||0);
-  const nature=document.getElementById('pkNature').value.trim();
-  const price=Number(document.getElementById('pkPrice').value||0);
-  const tera=document.getElementById('pkTera').value.trim();
-  const ball=document.getElementById('pkBall').value.trim();
-  const held=document.getElementById('pkHeld').value.trim();
-  const ability=document.getElementById('pkAbility').value.trim();
-  const size=document.getElementById('pkSize').value.trim();
-  const shiny=document.getElementById('pkShiny').checked;
-  const neutered=document.getElementById('pkNeutered').checked;
-  const ivs={hp:+(document.getElementById('ivHP').value||0),atk:+(document.getElementById('ivATK').value||0),def:+(document.getElementById('ivDEF').value||0),spa:+(document.getElementById('ivSPA').value||0),spd:+(document.getElementById('ivSPD').value||0),spe:+(document.getElementById('ivSPE').value||0)};
-  const evs={hp:+(document.getElementById('evHP').value||0),atk:+(document.getElementById('evATK').value||0),def:+(document.getElementById('evDEF').value||0),spa:+(document.getElementById('ivSPA').value||0),spd:+(document.getElementById('evSPD').value||0),spe:+(document.getElementById('evSPE').value||0)};
-  const moves=document.getElementById('pkMoves').value.trim();
-  const notes=document.getElementById('pkNotes').value.trim();
+    let app,auth,db,refItems,refPk,refReq; let items=[],pokemon=[],requests=[];
 
-  let imageUrl='';
-  const file=document.getElementById('pkImg').files?.[0];
-  if(file && window.storage){
-    const path=`shops/${document.getElementById('shopId').value.trim()}/pk_images/${id}-${file.name}`.replace(/\s+/g,'_');
-    const snap=await storage.ref(path).put(file);
-    imageUrl=await snap.ref.getDownloadURL();
-  }
+    function tryJson(s){ try{return JSON.parse(s)}catch{return null} }
 
-  patchPk(id,{ id, owner, nickname, species, level, nature, price, tera, ball, held, ability, size, shiny, neutered, ivs, evs, moves, notes, imageUrl });
-  e.target.reset(); document.getElementById('pkPreview').classList.add('hidden'); document.getElementById('pkPreview').src='';
-});
+    async function connect(){
+      const shop=$('#shopId').value.trim();
+      const cfg=tryJson($('#cfgJson').value);
+      if(!shop||!cfg){ $('#status').textContent='Missing config or Shop ID'; return; }
+      try{
+        app=firebase.apps.length?firebase.app():firebase.initializeApp(cfg);
+        auth=firebase.auth();
+        await auth.signInAnonymously();
+        db=firebase.database();
+        refItems=db.ref(`/shops/${shop}/items`);
+        refPk   =db.ref(`/shops/${shop}/pokemon`);
+        refReq  =db.ref(`/shops/${shop}/requests`);
+        $('#status').textContent='Connected ✓';
 
-/* items add/update */
-document.getElementById('addItemForm').addEventListener('submit',(e)=>{
-  e.preventDefault();
-  const name=document.getElementById('itemName').value.trim();
-  const category=document.getElementById('itemCat').value.trim();
-  const sell=Number(document.getElementById('itemPrice').value||0);
-  const stock=document.getElementById('itemStock').value===''?'':Number(document.getElementById('itemStock').value);
-  const notes=document.getElementById('itemNotes').value.trim();
-  const id=idify(name+'-'+category);
-  const buyPrice=Math.round((sell||0)*BUY_RATE);
-  patchItem(id,{ id, name, category, sellPrice:sell, buyPrice, stock, notes });
-  e.target.reset();
-});
-
-/* inline edits + buttons */
-document.addEventListener('input',(e)=>{
-  const t=e.target;
-  if(t.matches('input[data-id]')){
-    const id=t.getAttribute('data-id'); const field=t.getAttribute('data-field');
-    let v=t.value;
-    if(field==='sellPrice'||field==='stock'){ v = v===''?'': Number(v); }
-    patchItem(id,{ [field]: v });
-  }
-});
-document.addEventListener('click',(e)=>{
-  const t=e.target; const id=t.getAttribute('data-id');
-  if(t.dataset.act==='inc'){ const it=items.find(x=>x.id===id); patchItem(id,{stock:Number(it?.stock||0)+1}); }
-  if(t.dataset.act==='dec'){ const it=items.find(x=>x.id===id); patchItem(id,{stock:Math.max(0,Number(it?.stock||0)-1)}); }
-  if(t.dataset.act==='delItem'){ if(confirm('Delete item?')) removeItem(id); }
-  if(t.dataset.act==='delPk'){ if(confirm('Delete Pokémon?')) removePk(id); }
-});
-
-/* ---------- REQUESTS: tolerant reader + table ---------- */
-function normalizeReq(r){
-  const msg = r.message ?? r.msg ?? r.text ?? r.details ?? '';
-  const items = Array.isArray(r.items) ? r.items : (Array.isArray(r.cart) ? r.cart : []);
-  const normItems = items.map(it=>{
-    const name  = it.name ?? it.item ?? it.label ?? '';
-    const qty   = Number(it.qty ?? it.quantity ?? 1) || 0;
-    const price = Number(it.price ?? it.amount ?? 0) || 0;
-    return { name, qty, price, subtotal: qty * price };
-  });
-  const total = r.total ?? normItems.reduce((s,i)=> s + i.subtotal, 0);
-  const status = r.status || (r.closed ? 'closed' : 'open');
-  return { ...r, message: msg, items: normItems, total, status };
-}
-
-function renderReq(){
-  const q=(document.getElementById('qReq')?.value||'').toLowerCase();
-  const f=(document.getElementById('reqFilter')?.value||'All');
-  const tb=document.getElementById('rowsReq'); if(!tb) return; tb.innerHTML='';
-  const list=(Array.isArray(requests)?requests:[]).map(normalizeReq);
-
-  const filtered=list.filter(r=>{
-    const matchesQ = [r.ign,r.discord,r.type,r.message].join(' ').toLowerCase().includes(q);
-    const typeOk = (f==='All') ||
-                   (f==='open' && r.status==='open') ||
-                   (f==='closed' && r.status==='closed') ||
-                   (r.type===f || (f==='new' && r.type==='new-item'));
-    return matchesQ && typeOk;
-  });
-
-  for(const r of filtered){
-    const summary = r.type==='sell'
-      ? `${r.items.length} items`
-      : (r.message ? (r.message.length>40 ? r.message.slice(0,40)+'…' : r.message) : '');
-    const tr=document.createElement('tr');
-    tr.innerHTML=`
-      <td class="p-2 whitespace-nowrap">${new Date(r.createdAt||0).toLocaleString()}</td>
-      <td class="p-2">${r.ign||''}</td>
-      <td class="p-2">${r.discord||''}</td>
-      <td class="p-2">${r.type||''}</td>
-      <td class="p-2">${summary}</td>
-      <td class="p-2">${r.type==='sell' && r.total ? ('$'+r.total) : ''}</td>
-      <td class="p-2">${r.status}</td>
-      <td class="p-2"><button class="btn" data-open-req="${r.id}">Open</button></td>`;
-    tb.appendChild(tr);
-  }
-}
-document.getElementById('qReq')?.addEventListener('input', renderReq);
-document.getElementById('reqFilter')?.addEventListener('change', renderReq);
-
-/* open modal with full details */
-document.addEventListener('click',(e)=>{
-  const openId = e.target.getAttribute('data-open-req');
-  if(!openId) return;
-  const raw = requests.find(x=>x.id===openId);
-  if(!raw) return;
-  const r = normalizeReq(raw);
-
-  const body = document.getElementById('reqBody');
-  const msgBlock = r.message
-    ? `<div class="mt-2">
-         <span class="font-semibold">Message:</span>
-         <div class="mt-1 whitespace-pre-wrap">${r.message}</div>
-       </div>` : '';
-
-  const itemsBlock = (r.type==='sell' && r.items.length)
-    ? `<div class="mt-3">
-         <div class="font-semibold mb-1">Selling items</div>
-         <div class="rounded-lg border overflow-hidden">
-           <table class="w-full text-sm">
-             <thead class="bg-slate-50">
-               <tr><th class="p-2 text-left">Item</th>
-                   <th class="p-2 text-left">Qty</th>
-                   <th class="p-2 text-left">Price</th>
-                   <th class="p-2 text-left">Subtotal</th></tr>
-             </thead>
-             <tbody>
-               ${r.items.map(i=>`<tr>
-                  <td class="p-2">${i.name}</td>
-                  <td class="p-2">${i.qty}</td>
-                  <td class="p-2">$${i.price}</td>
-                  <td class="p-2">$${i.subtotal}</td>
-                </tr>`).join('')}
-             </tbody>
-           </table>
-         </div>
-         <div class="text-right mt-2 font-semibold">Total: $${r.total}</div>
-       </div>` : '';
-
-  body.innerHTML = `
-    <div class="text-sm text-slate-700">
-      <div><span class="font-semibold">When:</span> ${new Date(r.createdAt||0).toLocaleString()}</div>
-      <div><span class="font-semibold">IGN:</span> ${r.ign||''}</div>
-      <div><span class="font-semibold">Discord:</span> ${r.discord||''}</div>
-      <div><span class="font-semibold">Type:</span> ${r.type||''}</div>
-      <div><span class="font-semibold">Status:</span> ${r.status}</div>
-      ${msgBlock}
-      ${itemsBlock}
-    </div>
-  `;
-  document.getElementById('reqToggle').textContent = (r.status==='closed'?'Reopen':'Close');
-  document.getElementById('reqToggle').setAttribute('data-id', r.id);
-  document.getElementById('reqDelete').setAttribute('data-id', r.id);
-  document.getElementById('reqModal').classList.remove('hidden');
-  document.getElementById('reqModal').classList.add('flex');
-});
-document.getElementById('reqClose').addEventListener('click', ()=>{
-  document.getElementById('reqModal').classList.add('hidden');
-  document.getElementById('reqModal').classList.remove('flex');
-});
-document.getElementById('reqToggle').addEventListener('click', (e)=>{
-  const id=e.target.getAttribute('data-id'); if(!id) return;
-  const cur=requests.find(x=>x.id===id)||{};
-  patchReq(id,{ status: (cur.status==='closed'?'open':'closed') });
-});
-document.getElementById('reqDelete').addEventListener('click', (e)=>{
-  const id=e.target.getAttribute('data-id'); if(!id) return;
-  if(confirm('Delete this request?')) removeReq(id);
-});
-
-/* ---------- CSV export helpers ---------- */
-function escapeCsv(v){ const s=String(v??''); return /[",\n]/.test(s)?`"${s.replace(/"/g,'""')}"`:s; }
-function rowsToCsv(rows){ return rows.map(r=>r.map(escapeCsv).join(',')).join('\n'); }
-
-/* Items CSV */
-document.getElementById('dlItemsCsv').addEventListener('click', ()=>{
-  const pct=Math.round(BUY_RATE*100);
-  const rows=[['Name','Category','Sell','Buy','Stock','Notes']];
-  for(const it of items){
-    const sell=Number(it.sellPrice??it.price??0)||0;
-    const buy =Number.isFinite(Number(it.buyPrice))? Number(it.buyPrice): Math.round(sell*BUY_RATE);
-    rows.push([it.name||'',it.category||'',sell,`${buy} (${pct}%)`,it.stock===''?'':it.stock,it.notes||'']);
-  }
-  const a=document.createElement('a');
-  a.href=URL.createObjectURL(new Blob([rowsToCsv(rows)],{type:'text/csv'}));
-  a.download='shop.csv'; document.body.appendChild(a); a.click(); a.remove();
-});
-
-/* Pokémon CSV */
-document.getElementById('dlPkCsv').addEventListener('click', ()=>{
-  const rows=[['Owner','Nickname','Species','Level','Nature','Price','Tera','Ball','Held','Ability','Size','Shiny','Neutered','Moves','Notes','ImageUrl']];
-  for(const p of pokemon){
-    rows.push([p.owner||'',p.nickname||'',p.species||'',p.level||'',p.nature||'',p.price||'',p.tera||'',p.ball||'',p.held||'',p.ability||'',p.size||'',p.shiny?1:0,p.neutered?1:0,p.moves||'',p.notes||'',p.imageUrl||'']);
-  }
-  const a=document.createElement('a');
-  a.href=URL.createObjectURL(new Blob([rowsToCsv(rows)],{type:'text/csv'}));
-  a.download='pokemon.csv'; document.body.appendChild(a); a.click(); a.remove();
-});
-
-/* Requests CSV */
-document.getElementById('dlReqCsv').addEventListener('click', ()=>{
-  const rows=[['When','IGN','Discord','Type','Message','Items','Total','Status']];
-  for(const r0 of requests){
-    const r=normalizeReq(r0);
-    const itemsStr = r.type==='sell' ? r.items.map(i=>`${i.qty}x ${i.name} @ ${i.price}`).join('; ') : '';
-    rows.push([new Date(r.createdAt||0).toISOString(), r.ign||'', r.discord||'', r.type||'', r.message||'', itemsStr, r.total||'', r.status|| 'open']);
-  }
-  const a=document.createElement('a');
-  a.href=URL.createObjectURL(new Blob([rowsToCsv(rows)],{type:'text/csv'}));
-  a.download='requests.csv'; document.body.appendChild(a); a.click(); a.remove();
-});
-
-/* ---------- import from shop.csv ---------- */
-document.getElementById('importCsv').addEventListener('click', async ()=>{
-  if(!db){ return alert('Connect first (Save config), then try again.'); }
-  try{
-    const res=await fetch('shop.csv',{cache:'no-store'}); if(!res.ok) return alert('shop.csv not found');
-    const txt=await res.text();
-    const wb=XLSX.read(txt,{type:'string'});
-    const ws=wb.Sheets[wb.SheetNames[0]];
-    const rows=XLSX.utils.sheet_to_json(ws,{header:1,raw:true}); if(!rows.length) return alert('CSV empty');
-
-    const headers=rows[0].map(x=>String(x||'').toLowerCase());
-    const idxName=headers.findIndex(h=>h.includes('name')||h==='item');
-    const idxCat =headers.findIndex(h=>h.includes('cat'));
-    const idxPrice=headers.findIndex(h=>h.includes('sell_price')||h.includes('sell price')||h==='price'||h.includes('price')||h.includes('sell'));
-    const idxStock=headers.findIndex(h=>h.includes('stock'));
-    const idxNotes=headers.findIndex(h=>h.includes('notes')||h.includes('desc'));
-
-    for(const r of rows.slice(1)){
-      const name=String(r[idxName]||'').trim(); if(!name) continue;
-      const category=String(r[idxCat]||'').trim();
-      const sell=Number(r[idxPrice]||0);
-      const id=idify(name+'-'+category);
-      patchItem(id,{
-        id, name, category,
-        sellPrice: sell,
-        buyPrice: Math.round(sell*BUY_RATE),
-        stock: (r[idxStock]===''||r[idxStock]==null)?'':Number(r[idxStock]),
-        notes: String(r[idxNotes]||'').trim()
-      });
+        refItems.on('value',snap=>{ items=Object.values(snap.val()||{}); items.sort((a,b)=> (a.category||'').localeCompare(b.category||'')|| (a.name||'').localeCompare(b.name||'')); fillItemCats(); renderItems(); });
+        refPk.on('value',snap=>{ pokemon=Object.values(snap.val()||{}); pokemon.sort((a,b)=> (a.owner||'').localeCompare(b.owner||'')|| (a.species||'').localeCompare(b.species||'')); renderPk(); });
+        refReq.on('value',snap=>{ requests=Object.entries(snap.val()||{}).map(([id,v])=>({...v,id})); requests.sort((a,b)=> (b.ts||0)-(a.ts||0)); renderReq(); });
+      }catch(e){ console.error(e); $('#status').textContent='Error connecting'; }
     }
-    alert('Imported to Firebase ✓');
-  }catch(e){ console.error(e); alert('Import failed'); }
-});
 
-/* ---------- buy% + recalc ---------- */
-document.getElementById('buyPct').addEventListener('input', ()=>{
-  const v=Math.max(1,Math.min(100, Number(document.getElementById('buyPct').value||BUY_RATE_DEFAULT)));
-  document.getElementById('buyPct').value=v; BUY_RATE=v/100;
-});
-document.getElementById('recalc').addEventListener('click', ()=>{
-  if(!db) return alert('Connect first');
-  for(const it of items){
-    const sell=Number(it.sellPrice??it.price??0);
-    patchItem(it.id,{ buyPrice: Math.round(sell*BUY_RATE) });
-  }
-  alert('Recalculated using '+Math.round(BUY_RATE*100)+'%');
-});
+    // ---------- items ----------
+    function patchItem(id,changes){ const cur=items.find(x=>x.id===id)||{id}; refItems.child(id).set({...cur,...changes,_ts:now(),id}); }
+    function removeItem(id){ refItems.child(id).remove(); }
 
-/* ---------- top buttons ---------- */
-document.getElementById('saveCfg').addEventListener('click', ()=>{ saveCfg(); connect(); });
-document.getElementById('reload').addEventListener('click', ()=> connect());
-document.getElementById('signOut').addEventListener('click', async ()=>{
-  try{ await auth?.signOut(); document.getElementById('status').textContent='Signed out'; }catch(e){ console.error(e); alert('Sign out failed'); }
-});
+    function fillItemCats(){ const sel=$('#catItems'); const cur=sel.value; const set=new Set(items.map(i=>i.category).filter(Boolean)); sel.innerHTML=''; sel.add(new Option('All','All')); [...set].sort((a,b)=>a.localeCompare(b)).forEach(c=> sel.add(new Option(c,c))); sel.value=[...sel.options].some(o=>o.value===cur)?cur:'All'; }
 
-/* ---------- searches ---------- */
-document.getElementById('qItems').addEventListener('input', renderItems);
-document.getElementById('catItems').addEventListener('change', renderItems);
-document.getElementById('qPk').addEventListener('input', renderPk);
-document.getElementById('pkOwnerFilter').addEventListener('change', renderPk);
+    function renderItems(){ const q=$('#qItems').value.toLowerCase(); const cat=$('#catItems').value||'All'; const tb=$('#rowsItems'); tb.innerHTML='';
+      const data=items.filter(it=> (cat==='All'||it.category===cat) && ((it.name||'').toLowerCase().includes(q)||(it.category||'').toLowerCase().includes(q)||(it.notes||'').toLowerCase().includes(q)) );
+      for(const it of data){ const sell=Number(it.sellPrice??it.price??0); const tr=document.createElement('tr'); tr.innerHTML=`
+        <td class="p-2">${it.name||''}</td>
+        <td class="p-2">${it.category||''}</td>
+        <td class="p-2"><input class="input w-28" value="${sell}" data-id="${it.id}" data-field="sellPrice"></td>
+        <td class="p-2">${fmtMoney(Math.round(sell*BUY_PCT()))}</td>
+        <td class="p-2 flex items-center gap-2">
+          <button class="btn" data-act="dec" data-id="${it.id}">−</button>
+          <input class="input w-20" value="${it.stock===''?'':it.stock}" data-id="${it.id}" data-field="stock">
+          <button class="btn" data-act="inc" data-id="${it.id}">+</button>
+        </td>
+        <td class="p-2"><input class="input" value="${it.notes||''}" data-id="${it.id}" data-field="notes"></td>
+        <td class="p-2"><button class="btn" data-act="delItem" data-id="${it.id}">Delete</button></td>`; tb.appendChild(tr); }
+    }
 
-/* ---------- boot with known config ---------- */
-document.addEventListener('DOMContentLoaded', ()=>{
-  const prefill = {
-    apiKey: "AIzaSyAfvM_nSppUkYoRa1Bes2NuE-Bs8vTwcIE",
-    authDomain: "jjblossom-35083.firebaseapp.com",
-    databaseURL: "https://jjblossom-35083-default-rtdb.firebaseio.com",
-    projectId: "jjblossom-35083",
-    storageBucket: "jjblossom-35083.firebasestorage.app",
-    messagingSenderId: "480122553743",
-    appId: "1:480122553743:web:04bf017d5e16f28fd477fa",
-    measurementId: "G-GVCG3PTNVP"
-  };
-  if(!document.getElementById('cfgJson').value) document.getElementById('cfgJson').value = JSON.stringify(prefill);
-  const cfg=loadCfg(); if(cfg.shopId){ connect(); }
-});
-</script>
+    $('#addItemForm').addEventListener('submit', e=>{ e.preventDefault(); const name=$('#itemName').value.trim(); const category=$('#itemCat').value.trim(); const sell=Number($('#itemPrice').value||0); const stock=$('#itemStock').value===''?'':Number($('#itemStock').value); const notes=$('#itemNotes').value.trim(); const id=idify(name+'-'+category); patchItem(id,{id,name,category,sellPrice:sell,stock,notes}); e.target.reset(); });
+
+    // inline edits
+    document.addEventListener('input', e=>{ const t=e.target; if(t.matches('input[data-id]')){ const id=t.getAttribute('data-id'); const field=t.getAttribute('data-field'); let v=t.value; if(field==='stock'){ v=v===''?'':Number(v); } else if(field==='sellPrice'){ v=Number(v||0); } patchItem(id,{[field]:v}); }});
+    document.addEventListener('click', e=>{ const t=e.target; const id=t.getAttribute('data-id'); if(t.dataset.act==='inc'){ const it=items.find(x=>x.id===id); patchItem(id,{stock:Number(it?.stock||0)+1}); } if(t.dataset.act==='dec'){ const it=items.find(x=>x.id===id); patchItem(id,{stock:Math.max(0,Number(it?.stock||0)-1)}); } if(t.dataset.act==='delItem'){ if(confirm('Delete item?')) removeItem(id); } });
+
+    // import/export/recalc
+    $('#importCsv').addEventListener('click', async ()=>{ try{ const res=await fetch('shop.csv',{cache:'no-store'}); if(!res.ok) return alert('shop.csv not found'); const txt=await res.text(); const wb=XLSX.read(txt,{type:'string'}); const ws=wb.Sheets[wb.SheetNames[0]]; const rows=XLSX.utils.sheet_to_json(ws,{header:1,raw:true}); if(!rows.length) return alert('CSV empty'); const H=rows[0].map(x=>String(x||'').toLowerCase()); const idxName=H.findIndex(h=>h.includes('name')||h==='item'); const idxCat=H.findIndex(h=>h.includes('cat')); const idxSell=H.findIndex(h=>h.includes('sell price')||h.includes('sell_price')||h==='price'||h.includes('price')||h.includes('sell')); const idxStock=H.findIndex(h=>h.includes('stock')); const idxNotes=H.findIndex(h=>h.includes('notes')||h.includes('desc')); for(const r of rows.slice(1)){ const name=String(r[idxName]||'').trim(); if(!name) continue; const category=String(r[idxCat]||'').trim(); const sell=Number(r[idxSell]||0); const id=idify(name+'-'+category); const stock=(r[idxStock]===''||r[idxStock]==null)?'':Number(r[idxStock]); const notes=String(r[idxNotes]||'').trim(); patchItem(id,{id,name,category,sellPrice:sell,stock,notes}); } alert('Imported!'); }catch(e){ console.error(e); alert('Import failed'); }});
+
+    $('#exportCsv').addEventListener('click', ()=>{ const rows=[["name","category","sell","buy(%)","stock","notes"]]; for(const it of items){ const sell=Number(it.sellPrice??it.price??0); rows.push([it.name||'',it.category||'',sell,Math.round(sell*BUY_PCT()),it.stock===''?'':it.stock,it.notes||'']); } const ws=XLSX.utils.aoa_to_sheet(rows); const wb=XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb,ws,'items'); XLSX.writeFile(wb,'shop_export.csv'); });
+
+    $('#recalc').addEventListener('click', ()=>{ for(const it of items){ const sell=Number(it.sellPrice??it.price??0); patchItem(it.id,{buyPrice:Math.round(sell*BUY_PCT())}); } alert('Recalculated buy prices'); });
+
+    // ---------- Pokémon ----------
+    function patchPk(id,changes){ const cur=pokemon.find(x=>x.id===id)||{id}; refPk.child(id).set({...cur,...changes,_ts:now(),id}); }
+    function removePk(id){ refPk.child(id).remove(); }
+
+    function renderPk(){ const q=$('#qPk').value.toLowerCase(); const owner=$('#pkOwnerFilter').value; const tb=$('#rowsPk'); tb.innerHTML=''; const data=pokemon.filter(p=> (owner==='All'||p.owner===owner) && ((p.species||'').toLowerCase().includes(q)||(p.nickname||'').toLowerCase().includes(q)||(p.nature||'').toLowerCase().includes(q)||(p.notes||'').toLowerCase().includes(q)) ); for(const p of data){ const tr=document.createElement('tr'); tr.innerHTML=`<td class="p-2">${p.owner||''}</td><td class="p-2">${p.nickname?`${p.nickname} (${p.species})`:p.species}</td><td class="p-2">${p.level||''}</td><td class="p-2">${p.nature||''}</td><td class="p-2">${fmtMoney(p.price)}</td><td class="p-2"><input class="input" value="${p.notes||''}" data-pk-id="${p.id}" data-field="notes"></td><td class="p-2"><button class="btn" data-act="delPk" data-id="${p.id}">Delete</button></td>`; tb.appendChild(tr); } }
+
+    $('#addPkForm').addEventListener('submit', e=>{ e.preventDefault(); const owner=$('#pkOwner').value; const nickname=$('#pkNickname').value.trim(); const species=$('#pkSpecies').value.trim(); const id=idify(owner+'-'+species+'-'+Date.now()); const level=Number($('#pkLevel').value||0); const nature=$('#pkNature').value.trim(); const price=Number($('#pkPrice').value||0); const tera=$('#pkTera').value.trim(); const ball=$('#pkBall').value.trim(); const held=$('#pkHeld').value.trim(); const ability=$('#pkAbility').value.trim(); const size=$('#pkSize').value.trim(); const shiny=$('#pkShiny').checked; const neutered=$('#pkNeutered').checked; const moves=$('#pkMoves').value.trim(); const notes=$('#pkNotes').value.trim(); patchPk(id,{id,owner,nickname,species,level,nature,price,tera,ball,held,ability,size,shiny,neutered,moves,notes}); e.target.reset(); });
+
+    document.addEventListener('input', e=>{ const t=e.target; if(t.matches('input[data-pk-id]')){ const id=t.getAttribute('data-pk-id'); const field=t.getAttribute('data-field'); patchPk(id,{[field]:t.value}); }});
+    document.addEventListener('click', e=>{ const t=e.target; const id=t.getAttribute('data-id'); if(t.dataset.act==='delPk'){ if(confirm('Delete Pokémon?')) removePk(id); }});
+
+    // ---------- Requests ----------
+    function renderReq(){ const q=($('#qReq').value||'').toLowerCase(); const status=$('#statusReq').value; const tb=$('#rowsReq'); tb.innerHTML=''; for(const r of requests){ if(status!=='All' && (r.status||'open')!==status) continue; const who=((r.ign||'')+' '+(r.discord||'')).toLowerCase(); if(!who.includes(q)) continue; const total = (r.total!=null? r.total : (Array.isArray(r.sellItems)? r.sellItems.reduce((s,x)=> s + Number(x.price||0)*Number(x.qty||0),0): 0)); const tr=document.createElement('tr'); tr.innerHTML=`<td class="p-2 text-slate-500">${new Date(r.ts||0).toLocaleString()}</td><td class="p-2">${r.ign||''}</td><td class="p-2">${r.discord||''}</td><td class="p-2">${r.type||''}</td><td class="p-2">${r.summary||''}</td><td class="p-2">${total?fmtMoney(total):''}</td><td class="p-2"><span class="chip">${r.status||'open'}</span></td><td class="p-2"><button class="btn" data-act="openReq" data-id="${r.id}">Open</button></td>`; tb.appendChild(tr); } }
+
+    function showReqModal(r){ const body=$('#reqBody'); const lines=[]; if(r.detailsText){ lines.push(`<div><b>Message:</b> ${r.detailsText}</div>`); } if(Array.isArray(r.sellItems)&&r.sellItems.length){ const rows=r.sellItems.map(it=>`<tr><td class='p-2 border'>${it.name||''}</td><td class='p-2 border text-right'>${it.qty||0}</td><td class='p-2 border text-right'>${fmtMoney(it.price||0)}</td><td class='p-2 border text-right'>${fmtMoney((it.price||0)*(it.qty||0))}</td></tr>`).join(''); const total=r.sellItems.reduce((s,x)=> s + Number(x.price||0)*Number(x.qty||0),0); lines.push(`<div><b>Selling items</b><div class='overflow-auto rounded border mt-1'><table class='min-w-full text-sm'><thead class='bg-slate-50'><tr><th class='p-2 text-left'>Item</th><th class='p-2 text-right'>Qty</th><th class='p-2 text-right'>Price</th><th class='p-2 text-right'>Line total</th></tr></thead><tbody>${rows}</tbody><tfoot><tr><td colspan='3' class='p-2 text-right font-semibold'>Total</td><td class='p-2 text-right font-semibold'>${fmtMoney(total)}</td></tr></tfoot></table></div></div>`); }
+      body.innerHTML = `<div class='grid grid-cols-2 gap-2 text-sm'><div><b>When:</b> ${new Date(r.ts||0).toLocaleString()}</div><div><b>Status:</b> ${r.status||'open'}</div><div><b>IGN:</b> ${r.ign||''}</div><div><b>Discord:</b> ${r.discord||''}</div><div><b>Type:</b> ${r.type||''}</div><div><b>Summary:</b> ${r.summary||''}</div></div>` + (lines.length? `<div class='mt-2 space-y-2'>${lines.join('')}</div>` : `<div class='text-slate-500'>No extra details provided.</div>`);
+      $('#markClosed').onclick = ()=> refReq.child(r.id).update({status:'closed'});
+      $('#deleteReq').onclick   = ()=> { if(confirm('Delete this request?')) refReq.child(r.id).remove(); };
+      $('#reqDlg').showModal();
+    }
+
+    document.addEventListener('click', e=>{ const t=e.target; if(t.dataset.act==='openReq'){ const r=requests.find(x=>x.id===t.getAttribute('data-id')); if(r) showReqModal(r); }});
+
+    // ---------- wire up ----------
+    $('#saveCfg').addEventListener('click', connect);
+    $('#reload').addEventListener('click', connect);
+    $('#qItems').addEventListener('input', renderItems); $('#catItems').addEventListener('change', renderItems);
+    $('#qPk').addEventListener('input', renderPk); $('#pkOwnerFilter').addEventListener('change', renderPk);
+    $('#qReq').addEventListener('input', renderReq); $('#statusReq').addEventListener('change', renderReq);
+    $('#signOut').addEventListener('click', async ()=>{ try{ await auth?.signOut(); $('#status').textContent='Signed out'; }catch(e){ console.error(e); }});
+
+    // optional: prefill your config to make life easier
+    document.addEventListener('DOMContentLoaded',()=>{
+      const prefill={
+        apiKey:"AIzaSyAfvM_nSppUkYoRa1Bes2NuE-Bs8vTwcIE",
+        authDomain:"jjblossom-35083.firebaseapp.com",
+        databaseURL:"https://jjblossom-35083-default-rtdb.firebaseio.com",
+        projectId:"jjblossom-35083",
+        storageBucket:"jjblossom-35083.firebasestorage.app",
+        messagingSenderId:"480122553743",
+        appId:"1:480122553743:web:04bf017d5e16f28fd477fa",
+        measurementId:"G-GVCG3PTNVP"
+      };
+      $('#cfgJson').value=JSON.stringify(prefill);
+    });
+  </script>
 </body>
 </html>
