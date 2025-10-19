@@ -2,136 +2,133 @@
 <html lang="en">
 <head>
   <meta charset="utf-8"/>
-  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
   <title>🌸 JJBlossoms Shop — Live</title>
-  <meta name="theme-color" content="#f7e0ea"/>
+  <meta name="theme-color" content="#f6e6eb"/>
   <script src="https://cdn.tailwindcss.com"></script>
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;700;900&family=Cinzel:wght@700&display=swap" rel="stylesheet">
+  <!-- Firebase (compat so it matches your Admin page) -->
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
   <style>
-    :root{ --brand:#ea4c89 }
-    .brand{ font-family:'Cinzel','Noto Sans JP',system-ui,Segoe UI,Roboto,Helvetica,Arial }
-    .btn{ display:inline-flex; align-items:center; gap:.5rem; padding:.45rem .9rem; border-radius:.75rem; border:1px solid #e5e7eb; background:#fff }
-    .chip{ display:inline-flex; align-items:center; gap:.35rem; padding:.2rem .45rem; border-radius:.5rem; background:#f8fafc; border:1px solid #e5e7eb; font-size:.75rem }
-    .card{ border:1px solid #e5e7eb; background:#fff; border-radius:1rem }
-    .pill{ padding:.25rem .5rem; border-radius:.5rem; background:#fff; border:1px solid #e5e7eb; font-size:.7rem }
-    .soft{ background:linear-gradient(#ffeaf3,#fbeff6) }
-    .list-grid{ display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:.75rem }
-    @media (max-width: 1024px) { .list-grid{ grid-template-columns:1fr } }
-    /* —— Pokémon card image placement (your request) —— */
-    .pk-card{ position:relative; }
-    .pk-img-box{
-      position:absolute; right:.75rem; top:50%; transform:translateY(-50%);
-      width:120px; height:120px;        /* a bit larger but still modest */
-      display:flex; align-items:center; justify-content:center;
-      border-radius:.75rem; overflow:hidden; background:#fff8;
+    :root{--brand:#e9a8c1}
+    .brand{font-family:'Cinzel','Noto Sans JP',system-ui,Segoe UI,Roboto,Helvetica,Arial}
+    .chip{display:inline-flex;align-items:center;gap:.35rem;padding:.15rem .5rem;border-radius:.5rem;border:1px solid #e5e7eb;background:#fff;font-size:.75rem}
+    .btn{display:inline-flex;align-items:center;gap:.5rem;padding:.45rem .8rem;border-radius:.75rem;border:1px solid #e5e7eb;background:#fff}
+    .section{border:1px solid #f1d7e1;background:#fff;border-radius:1rem}
+    /* ⬇️ Only new styles for photo placement */
+    .pk-card{position:relative}
+    .pk-photo{
+      position:absolute; right:.85rem; top:50%; transform:translateY(-50%);
+      width:110px; height:110px; object-fit:contain; pointer-events:none;
+      filter: drop-shadow(0 2px 4px rgba(0,0,0,.15));
     }
-    .pk-img-box img{ max-width:100%; max-height:100%; object-fit:contain; }
-    /* keep left content readable with image on right */
-    .pk-left{ padding-right:140px; }     /* leave room for the image box */
+    @media (min-width: 1024px){ .pk-photo{ width:120px; height:120px } }
   </style>
 </head>
-<body class="bg-rose-50 min-h-screen">
-  <div class="max-w-6xl mx-auto p-4 sm:p-6 space-y-4">
-    <!-- Header -->
+<body class="bg-rose-50">
+  <div class="max-w-6xl mx-auto px-4 sm:px-6 py-6 space-y-4">
+
+    <!-- Banner / header -->
     <header class="space-y-3">
-      <div class="rounded-2xl overflow-hidden">
-        <img src="./Header.jpg" class="w-full max-h-48 object-cover soft" alt="">
-      </div>
-      <div class="flex items-center justify-between">
+      <img src="./Header.jpg" alt="" class="w-full rounded-xl object-cover max-h-48 sm:max-h-60">
+      <div class="flex items-center justify-between gap-3 flex-wrap">
+        <h1 class="brand text-2xl sm:text-3xl font-bold">🌸 JJBlossoms <span class="text-xs align-top font-normal text-slate-500">Data source: Firebase (Live)</span></h1>
         <div class="flex items-center gap-2">
-          <span class="brand text-2xl font-bold">🌸 JJBlossoms <span class="text-xs align-top">SHOP</span></span>
-          <span class="pill text-slate-600">Data source: <b>Firebase (Live)</b></span>
-        </div>
-        <div class="flex items-center gap-2">
-          <button id="btnReq" class="btn">📝 Requests</button>
+          <div class="relative">
+            <button id="btnPokemonMenu" class="btn">🧬 Pokémon For Sale ▾</button>
+            <div id="menuPokemon" class="hidden absolute right-0 mt-1 w-44 bg-white rounded-lg border shadow-md p-1 text-sm">
+              <button data-owner="All" class="w-full text-left px-3 py-2 rounded hover:bg-rose-50">All</button>
+              <button data-owner="Yerttty" class="w-full text-left px-3 py-2 rounded hover:bg-rose-50">Yerttty</button>
+              <button data-owner="Jonfiin" class="w-full text-left px-3 py-2 rounded hover:bg-rose-50">Jonfiin</button>
+            </div>
+          </div>
+          <button id="btnDownload" class="btn">💾 Download</button>
+          <a class="btn" href="./admin.html">🛠️ Admin</a>
           <button id="btnReload" class="btn">🔄 Reload data</button>
-          <a href="./admin.html" class="btn">🔧 Admin</a>
-          <button id="btnDownload" class="btn">⬇️ Download</button>
+          <button id="btnRequests" class="btn relative">📨 Requests</button>
         </div>
-      </div>
-      <div class="flex items-center gap-2">
-        <input id="q" class="w-full p-2.5 rounded-xl border" placeholder="Search items, categories...">
-        <select id="cat" class="p-2.5 rounded-xl border">
-          <option value="All">All</option>
-        </select>
-        <button id="btnReset" class="btn">Reset</button>
       </div>
     </header>
 
+    <!-- Search + filter -->
+    <div class="flex items-center gap-2 flex-wrap">
+      <input id="search" class="w-full sm:w-2/3 input px-3 py-2 rounded-lg border" placeholder="Search items, categories...">
+      <select id="filterCat" class="input px-3 py-2 rounded-lg border">
+        <option value="All">All</option>
+      </select>
+      <button id="btnReset" class="btn">Reset</button>
+    </div>
+
     <!-- Pokémon for sale -->
-    <section class="space-y-2">
+    <section class="space-y-3">
       <div class="flex items-center justify-between">
-        <div class="flex items-center gap-2"><span class="brand font-bold">🧧 Pokémon For Sale</span></div>
+        <h2 class="brand text-xl">🧬 Pokémon For Sale</h2>
         <div class="flex items-center gap-2">
-          <select id="pkOwner" class="p-2 rounded-lg border">
-            <option value="All">All</option>
-            <option value="Yerttty">Yerttty</option>
-            <option value="Jonfiin">Jonfiin</option>
+          <select id="ownerFilter" class="input px-3 py-2 rounded-lg border">
+            <option>All</option><option>Yerttty</option><option>Jonfiin</option>
           </select>
-          <input id="qPk" class="p-2 rounded-lg border" placeholder="Search Pokémon...">
+          <input id="searchPk" class="input px-3 py-2 rounded-lg border" placeholder="Search Pokémon...">
         </div>
       </div>
-      <div id="pkRows" class="list-grid"></div>
+      <div id="pkGrid" class="grid sm:grid-cols-2 gap-3"></div>
     </section>
 
-    <!-- Items list -->
+    <!-- Items grid -->
     <section class="space-y-2">
-      <div class="flex items-center gap-2"><span class="brand font-bold">🪄 Items</span>
-        <small id="itemCount" class="text-slate-500"></small>
+      <div class="flex items-center gap-2 text-xs text-slate-500">
+        <span>Buy price = 85% of item price (rounded).</span>
       </div>
-      <div id="itemRows" class="space-y-6"></div>
+      <div id="itemsGrid" class="grid md:grid-cols-2 lg:grid-cols-3 gap-3"></div>
     </section>
   </div>
 
-  <!-- Requests modal -->
-  <dialog id="dlg" class="rounded-2xl p-0 w-full max-w-3xl">
-    <form method="dialog" class="p-4 sm:p-6 space-y-3">
-      <div class="flex items-center justify-between">
-        <div class="brand font-bold">Requests</div>
+  <!-- Requests modal (unchanged UI; still submits to Firebase) -->
+  <dialog id="dlgRequests" class="rounded-xl p-0 w-[min(900px,95vw)]">
+    <form method="dialog" class="p-0 m-0">
+      <div class="p-4 border-b flex items-center justify-between">
+        <div class="brand text-lg font-bold">Requests</div>
         <button class="btn">Close</button>
       </div>
-      <div class="grid grid-cols-2 gap-2">
-        <input id="rqIGN" class="p-2 rounded-xl border" placeholder="IGN (in-game name)">
-        <input id="rqDisco" class="p-2 rounded-xl border" placeholder="Discord handle">
-        <select id="rqType" class="p-2 rounded-xl border col-span-2 sm:col-span-1">
-          <option>Price check / Request new price</option>
-          <option>Selling items</option>
-          <option>Supplier info</option>
-          <option>Other</option>
-        </select>
-        <input id="rqSubject" class="p-2 rounded-xl border sm:col-span-1 col-span-2" placeholder="Subject / item name (optional)">
-      </div>
-
-      <div class="space-y-1">
-        <div class="text-xs text-slate-500">Add items you’re selling (totals use our current buy %)</div>
-        <div class="flex items-center gap-2">
-          <input id="rqQ" class="p-2 rounded-xl border w-full" placeholder="Search shop items…">
-          <select id="rqCat" class="p-2 rounded-xl border"><option value="All">All categories</option></select>
+      <div class="p-4 space-y-3">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-2">
+          <input id="rqIGN" class="input px-3 py-2 rounded-lg border" placeholder="IGN (in-game name)">
+          <input id="rqDiscord" class="input px-3 py-2 rounded-lg border" placeholder="Discord handle">
         </div>
-        <div id="rqItemPicker" class="grid grid-cols-2 lg:grid-cols-3 gap-2 max-h-72 overflow-auto p-1 rounded-xl border bg-white"></div>
-        <div class="text-right text-sm">Estimated total: <b id="rqTotal">$0</b></div>
-        <div id="rqSelected" class="text-sm text-slate-600"></div>
-      </div>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-2">
+          <select id="rqType" class="input px-3 py-2 rounded-lg border">
+            <option value="price-check">Price check / Request new price</option>
+            <option value="selling-items">Selling items</option>
+            <option value="other">Other</option>
+          </select>
+          <input id="rqSubject" class="input px-3 py-2 rounded-lg border" placeholder="Subject / item name (optional)">
+        </div>
 
-      <textarea id="rqMsg" rows="4" class="w-full p-3 rounded-xl border" placeholder="Details / questions…"></textarea>
+        <!-- Selling items picker (uses live shop items/buy%) -->
+        <div class="space-y-2">
+          <div class="text-sm text-slate-700">Add items you’re selling</div>
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+            <input id="rqFindItem" class="input px-3 py-2 rounded-lg border" placeholder="Search shop items...">
+            <select id="rqCat" class="input px-3 py-2 rounded-lg border"><option>All categories</option></select>
+          </div>
+          <div id="rqItemPicker" class="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-60 overflow-auto rounded-md border p-2"></div>
+          <div class="text-right text-sm">Estimated total: <b id="rqTotal">$0</b></div>
+        </div>
 
-      <div class="flex items-center justify-end gap-2">
-        <button class="btn" value="cancel">Close</button>
-        <button id="rqSend" class="btn">Send</button>
+        <textarea id="rqMsg" class="input w-full px-3 py-2 rounded-lg border h-28" placeholder="Details / questions..."></textarea>
+        <div class="text-xs text-slate-500">Submitted to Firebase → <code>/shops/{shopId}/requests</code></div>
       </div>
-      <div class="text-xs text-slate-500">Submitted to Firebase → <code>/shops/&lt;shopId&gt;/requests</code></div>
+      <div class="p-3 border-t flex items-center justify-end gap-2">
+        <button class="btn">Close</button>
+        <button id="rqSend" type="button" class="btn bg-slate-900 text-white border-slate-900">Send</button>
+      </div>
     </form>
   </dialog>
 
   <script>
-    /***********************
-     * Firebase (live)
-     ***********************/
-    const shopId = 'jjblossoms';
-    const firebaseConfig = {
+    /* ===== Setup (same as your Admin) ===== */
+    const cfg = {
       apiKey: "AIzaSyAfvM_nSppUkYoRa1Bes2NuE-Bs8vTwcIE",
       authDomain: "jjblossom-35083.firebaseapp.com",
       databaseURL: "https://jjblossom-35083-default-rtdb.firebaseio.com",
@@ -141,313 +138,269 @@
       appId: "1:480122553743:web:04bf017d5e16f28fd477fa",
       measurementId: "G-GVCG3PTNVP"
     };
-
-    const app = firebase.initializeApp(firebaseConfig);
-    const auth = firebase.auth();
-    const db = firebase.database();
-    await auth.signInAnonymously();
-
+    const SHOP_ID = "jjblossoms";
     const BUY_RATE = 0.85;
-    let items = [];     // {id,name,category,sellPrice,buyPrice,...}
-    let pokemon = [];   // {owner,species,price,image?}
 
-    const $ = (s)=>document.querySelector(s);
+    let app, db, auth, items = [], pokemon = [], ownerFilter = "All";
 
-    const refItems = db.ref(`/shops/${shopId}/items`);
-    const refPk    = db.ref(`/shops/${shopId}/pokemon`);
-    const refReq   = db.ref(`/shops/${shopId}/requests`);
+    const $ = sel => document.querySelector(sel);
+    const el = (tag, cls, html) => {
+      const n = document.createElement(tag);
+      if (cls) n.className = cls;
+      if (html !== undefined) n.innerHTML = html;
+      return n;
+    };
 
-    refItems.on('value', snap=>{
-      const v = snap.val() || {};
-      items = Object.values(v).map(r=>({
-        ...r,
-        sellPrice: Number(r.sellPrice ?? r.price ?? 0),
-        buyPrice:   Number(r.buyPrice ?? Math.round(Number(r.sellPrice ?? r.price ?? 0)*BUY_RATE))
-      }));
-      drawItems();
-      buildRequestPicker();
-    });
+    async function connect(){
+      app = firebase.apps.length ? firebase.app() : firebase.initializeApp(cfg);
+      auth = firebase.auth();
+      await auth.signInAnonymously();
+      db = firebase.database();
 
-    refPk.on('value', snap=>{
-      const v = snap.val() || {};
-      pokemon = Object.values(v);
-      drawPokemon();
-    });
-
-    /***********************
-     * Items UI
-     ***********************/
-    function groupByCategory(list){
-      const map = new Map();
-      for(const it of list){
-        const k = (it.category || 'Other').trim();
-        if(!map.has(k)) map.set(k, []);
-        map.get(k).push(it);
-      }
-      return map;
-    }
-
-    function drawItems(){
-      const q = $('#q').value.toLowerCase();
-      const cat = $('#cat').value || 'All';
-
-      // fill cat dropdown once
-      if($('#cat').options.length <= 1){
-        const set = [...new Set(items.map(i=>i.category||'Other'))].sort((a,b)=>a.localeCompare(b));
-        for(const c of set){ const o=document.createElement('option'); o.value=o.textContent=c; $('#cat').appendChild(o); }
-      }
-
-      const filtered = items.filter(it=>{
-        const inCat = (cat==='All'||(it.category||'Other')===cat);
-        const hit   = (it.name||'').toLowerCase().includes(q) || (it.category||'').toLowerCase().includes(q);
-        return inCat && hit;
+      db.ref(`/shops/${SHOP_ID}/items`).on('value', snap => {
+        const v = snap.val() || {};
+        items = Object.values(v).sort((a,b)=> (a.category||'').localeCompare(b.category||'') || (a.name||'').localeCompare(b.name||''));
+        fillItemCats(); renderItems(); fillRqPicker();
       });
 
-      $('#itemCount').textContent = `— ${filtered.length} items`;
+      db.ref(`/shops/${SHOP_ID}/pokemon`).on('value', snap => {
+        const v = snap.val() || {};
+        pokemon = Object.values(v).sort((a,b)=> (a.owner||'').localeCompare(b.owner||'') || (a.species||'').localeCompare(b.species||'')); 
+        renderPokemon();
+      });
+    }
 
-      const byCat = groupByCategory(filtered);
-      const wrap = $('#itemRows'); wrap.innerHTML = '';
+    /* ===== Items render ===== */
+    function fillItemCats(){
+      const sel = $('#filterCat'); const cur = sel.value || 'All';
+      const set = new Set(items.map(i=>i.category).filter(Boolean));
+      sel.innerHTML = '<option value="All">All</option>';
+      [...set].sort((a,b)=>a.localeCompare(b)).forEach(c=> sel.add(new Option(c,c)));
+      sel.value = [...sel.options].some(o=>o.value===cur) ? cur : 'All';
+    }
+
+    function renderItems(){
+      const q = ($('#search').value||'').toLowerCase();
+      const cat = $('#filterCat').value || 'All';
+      const wrap = $('#itemsGrid'); wrap.innerHTML = '';
+
+      // Group by category
+      const byCat = new Map();
+      for(const it of items){
+        if (cat!=='All' && it.category!==cat) continue;
+        const hit = (it.name||'').toLowerCase().includes(q) || (it.category||'').toLowerCase().includes(q);
+        if(!hit) continue;
+        if(!byCat.has(it.category||'Other')) byCat.set(it.category||'Other',[]);
+        byCat.get(it.category||'Other').push(it);
+      }
+
       for(const [catName, rows] of byCat){
-        const sec = document.createElement('div');
-        sec.innerHTML = `
-          <div class="flex items-center justify-between">
-            <div class="flex items-center gap-2">
-              <span class="brand font-semibold">• ${catName}</span>
-              <small class="text-slate-400">${rows.length} items</small>
+        const section = el('div','section p-3 space-y-2');
+        const head = el('div','flex items-center gap-2');
+        head.innerHTML = `<span class="w-2 h-2 rounded-full bg-violet-300"></span>
+                          <div class="brand font-semibold">${catName||'Other'}</div>
+                          <span class="text-[11px] text-slate-500">${rows.length} items</span>`;
+        section.appendChild(head);
+
+        const grid = el('div','grid grid-cols-1 md:grid-cols-2 gap-2');
+        for(const it of rows){
+          const buy = Math.round(Number(it.sellPrice ?? it.price ?? 0) * BUY_RATE);
+          const card = el('div','p-3 rounded-xl border bg-white');
+          card.innerHTML = `
+            <div class="font-semibold">${it.name}</div>
+            <div class="mt-1 flex items-center gap-2 text-xs">
+              <span class="chip">Our Price <b>$${Number(it.sellPrice ?? it.price ?? 0).toFixed(0)}</b></span>
+              <span class="chip">We Buy (85%) <b>$${buy}</b></span>
+            </div>`;
+          grid.appendChild(card);
+        }
+        section.appendChild(grid);
+        wrap.appendChild(section);
+      }
+    }
+
+    /* ===== Pokémon render (photo centered right) ===== */
+    function renderPokemon(){
+      const q = ($('#searchPk').value||'').toLowerCase();
+      const ownerSel = $('#ownerFilter').value || 'All';
+      const grid = $('#pkGrid'); grid.innerHTML='';
+
+      const data = pokemon.filter(p=> (ownerSel==='All'||p.owner===ownerSel) &&
+        ((p.species||'').toLowerCase().includes(q) || (p.nickname||'').toLowerCase().includes(q) || (p.nature||'').toLowerCase().includes(q)));
+
+      for(const p of data){
+        const card = el('div','pk-card p-3 rounded-xl border bg-white');
+        // left block (info)
+        const nameLine = p.nickname ? `<span class="font-semibold">${p.nickname}</span> <span class="text-slate-500">(${p.species})</span>` : `<span class="font-semibold">${p.species||''}</span>`;
+        card.innerHTML = `
+          <div class="flex items-start gap-3">
+            <div class="flex-1 min-w-0">
+              <div class="flex items-center justify-between">
+                <div class="truncate">${nameLine}</div>
+                <div class="text-[11px] text-slate-500">${p.owner||''}</div>
+              </div>
+              <div class="mt-2 flex items-center gap-2 text-[11px]">
+                <span class="chip">$${Number(p.price||0).toFixed(0)}</span>
+                <span class="chip">Lv ${p.level||1}</span>
+                ${p.nature?`<span class="chip">${p.nature}</span>`:''}
+                ${p.shiny?`<span class="chip">✨ Shiny</span>`:''}
+              </div>
+              <div class="mt-2 text-[11px] text-slate-600 space-y-1">
+                ${p.ivs?`<div>IVs ${p.ivs.hp||0}/${p.ivs.atk||0}/${p.ivs.def||0}/${p.ivs.spa||0}/${p.ivs.spd||0}/${p.ivs.spe||0}</div>`:''}
+                ${p.evs?`<div>EVs ${p.evs.hp||0}/${p.evs.atk||0}/${p.evs.def||0}/${p.evs.spa||0}/${p.evs.spd||0}/${p.evs.spe||0}</div>`:''}
+                ${p.moves?`<div class="truncate">Moves: ${p.moves}</div>`:''}
+              </div>
             </div>
           </div>`;
-        const grid = document.createElement('div');
-        grid.className = 'grid md:grid-cols-2 lg:grid-cols-3 gap-2';
-        for(const r of rows){
-          const buy = Math.round((r.sellPrice||0)*BUY_RATE);
-          const el = document.createElement('div');
-          el.className = 'card p-3';
-          el.innerHTML = `
-            <div class="flex items-center justify-between">
-              <div class="font-medium truncate">${r.name||''}</div>
-            </div>
-            <div class="mt-2 grid grid-cols-2 gap-2 text-xs">
-              <div class="chip">Our Price <b>$${Number(r.sellPrice||0).toFixed(0)}</b></div>
-              <div class="chip">We Buy (85%) <b>$${buy.toFixed(0)}</b></div>
-            </div>`;
-          grid.appendChild(el);
+
+        // ⬇️ photo on the right middle (only if provided)
+        const imgUrl = p.image || p.img || '';
+        if(imgUrl){
+          const img = el('img','pk-photo');
+          img.src = imgUrl;
+          img.alt = p.species || 'pokemon';
+          card.appendChild(img);
         }
-        sec.appendChild(grid);
-        wrap.appendChild(sec);
+
+        grid.appendChild(card);
       }
     }
 
-    $('#q').addEventListener('input', drawItems);
-    $('#cat').addEventListener('change', drawItems);
-    $('#btnReset').addEventListener('click', ()=>{
-      $('#q').value=''; $('#cat').value='All'; drawItems();
-    });
-    $('#btnReload').addEventListener('click', ()=>{ refItems.once('value'); refPk.once('value'); });
+    /* ===== Requests (same behavior) ===== */
+    const dlg = $('#dlgRequests');
+    $('#btnRequests').addEventListener('click', ()=> dlg.showModal());
+    dlg.addEventListener('click', (e)=>{ if(e.target===dlg) dlg.close(); });
 
-    /***********************
-     * Pokémon UI (with image centered right & bigger)
-     ***********************/
-    function drawPokemon(){
-      const owner = $('#pkOwner').value || 'All';
-      const q = $('#qPk').value.toLowerCase();
-      const list = pokemon.filter(p=>{
-        if(owner!=='All' && p.owner!==owner) return false;
-        const hay = [p.owner,p.species,p.nickname,p.nature,p.notes].map(s=>(s||'').toLowerCase()).join(' ');
-        return hay.includes(q);
-      });
-
-      const box = $('#pkRows'); box.innerHTML='';
-      for(const p of list){
-        const img = p.image || p.imageUrl || p.img || '';
-        const price = Number(p.price||0);
-
-        const card = document.createElement('div');
-        card.className = 'card p-3 pk-card';
-
-        card.innerHTML = `
-          <div class="pk-left">
-            <div class="flex items-center justify-between">
-              <div class="font-semibold truncate">${p.nickname?`${p.nickname} <span class="text-slate-400">(${p.species})</span>`: (p.species||'')}</div>
-              <span class="pill">${p.owner||''}</span>
-            </div>
-            <div class="mt-1 flex flex-wrap items-center gap-2 text-xs">
-              <span class="chip">$${price.toFixed(0)}</span>
-              ${p.level?`<span class="chip">Lv ${p.level}</span>`:''}
-              ${p.nature?`<span class="chip">${p.nature}</span>`:''}
-              ${p.shiny?`<span class="chip">✨ Shiny</span>`:''}
-            </div>
-            <div class="mt-1 text-xs text-slate-600 space-x-2">
-              ${p.tera?`<span class="pill">Tera: ${p.tera}</span>`:''}
-              ${p.ball?`<span class="pill">Ball: ${p.ball}</span>`:''}
-              ${p.ability?`<span class="pill">Ability: ${p.ability}</span>`:''}
-              ${p.size?`<span class="pill">Size: ${p.size}</span>`:''}
-            </div>
-            ${p.ivs?`<div class="mt-1 text-[11px] text-slate-500">IVs ${p.ivs.hp||0}/${p.ivs.atk||0}/${p.ivs.def||0}/${p.ivs.spa||0}/${p.ivs.spd||0}/${p.ivs.spe||0}</div>`:''}
-            ${p.evs?`<div class="text-[11px] text-slate-500">EVs ${p.evs.hp||0}/${p.evs.atk||0}/${p.evs.def||0}/${p.evs.spa||0}/${p.evs.spd||0}/${p.evs.spe||0}</div>`:''}
-            ${p.moves?`<div class="mt-1 text-[11px] text-slate-600">Moves: ${p.moves}</div>`:''}
-            ${p.notes?`<div class="mt-1 text-[11px] text-slate-600">${p.notes}</div>`:''}
-          </div>
-          ${img?`
-            <div class="pk-img-box">
-              <img src="${img}" alt="${p.species||'pokemon'}">
-            </div>`:''}
-        `;
-        box.appendChild(card);
+    // Build selling picker from items
+    let rqSelected = new Map(); // id -> {name, qty, price}
+    function fillRqPicker(){
+      const box = $('#rqItemPicker'); box.innerHTML='';
+      const catSel = $('#rqCat'); const cur = catSel.value || 'All categories';
+      // fill category selector once
+      if (catSel.childElementCount<=1){
+        const set = new Set(items.map(i=>i.category).filter(Boolean));
+        [...set].sort((a,b)=>a.localeCompare(b)).forEach(c=> catSel.add(new Option(c,c)));
       }
-    }
 
-    $('#pkOwner').addEventListener('change', drawPokemon);
-    $('#qPk').addEventListener('input', drawPokemon);
-
-    /***********************
-     * Requests modal
-     ***********************/
-    const dlg = $('#dlg');
-    $('#btnReq').addEventListener('click', ()=> dlg.showModal());
-
-    let rqPick = []; // {id,name,qty,price}
-    function buildRequestPicker(){
-      // cat dropdown
-      const catSel = $('#rqCat');
-      if(catSel.options.length <= 1){
-        const set = [...new Set(items.map(i=>i.category||'Other'))].sort((a,b)=>a.localeCompare(b));
-        for(const c of set){ catSel.add(new Option(c,c)); }
-      }
-      renderRqPicker();
-    }
-
-    function renderRqPicker(){
-      const q = ($('#rqQ').value||'').toLowerCase();
-      const cat = $('#rqCat').value || 'All';
-      const grid = $('#rqItemPicker'); grid.innerHTML='';
-
-      const pool = items.filter(it=>{
-        const inCat = (cat==='All'||(it.category||'Other')===cat);
+      const q = ($('#rqFindItem').value||'').toLowerCase();
+      const list = items.filter(it=>{
+        const inCat = (cur==='All categories' || it.category===cur);
         const hit = (it.name||'').toLowerCase().includes(q) || (it.category||'').toLowerCase().includes(q);
         return inCat && hit;
-      }).slice(0,300);
+      }).slice(0,200); // keep UI snappy
 
-      for(const it of pool){
-        const id = it.id || (it.name+'|'+it.category);
-        const buy = Number(it.buyPrice ?? Math.round((it.sellPrice||0)*BUY_RATE));
-        const row = document.createElement('div');
-        row.className = 'border rounded-xl p-2 text-xs';
+      for(const it of list){
+        const buy = Math.round(Number(it.sellPrice ?? it.price ?? 0) * BUY_RATE);
+        const row = el('div','flex items-center justify-between gap-2 border rounded p-2 text-sm');
         row.innerHTML = `
-          <div class="font-medium truncate" title="${it.name}">${it.name}</div>
-          <div class="text-[11px] text-slate-500">Our buy: $${buy}</div>
-          <div class="mt-1 flex items-center gap-1">
-            <button class="btn" data-dec="${id}">−</button>
-            <input class="w-12 p-1 rounded border text-center" data-qty="${id}" value="${getQty(id)}">
-            <button class="btn" data-inc="${id}">+</button>
+          <div class="min-w-0">
+            <div class="font-medium truncate">${it.name}</div>
+            <div class="text-[11px] text-slate-500">Our buy: <b>$${buy}</b></div>
+          </div>
+          <div class="flex items-center gap-1">
+            <button class="btn px-2" data-dec>−</button>
+            <input class="w-12 text-center rounded border px-2 py-1" value="${rqSelected.get(it.id)?.qty||0}">
+            <button class="btn px-2" data-inc>+</button>
           </div>`;
-        grid.appendChild(row);
-      }
+        const qtyInput = row.querySelector('input');
 
-      // selected + total
-      const selBox = $('#rqSelected');
-      const total = rqPick.reduce((s,r)=> s + (r.qty*r.price), 0);
-      $('#rqTotal').textContent = `$${total.toFixed(0)}`;
-      selBox.textContent = rqPick.length
-        ? rqPick.map(r=>`${r.name} × ${r.qty}`).join(', ')
-        : 'Selected: —';
+        const update = (delta)=>{
+          const cur = rqSelected.get(it.id) || {name:it.name, qty:0, price:buy};
+          cur.qty = Math.max(0, Number(cur.qty) + delta);
+          if(cur.qty===0) rqSelected.delete(it.id); else rqSelected.set(it.id, cur);
+          qtyInput.value = cur.qty;
+          refreshRqTotal();
+        };
+        row.querySelector('[data-inc]').addEventListener('click',()=>update(1));
+        row.querySelector('[data-dec]').addEventListener('click',()=>update(-1));
+        qtyInput.addEventListener('input', ()=>{
+          const n = Math.max(0, Number(qtyInput.value||0));
+          if(n===0) rqSelected.delete(it.id); else rqSelected.set(it.id, {name:it.name, qty:n, price:buy});
+          refreshRqTotal();
+        });
+
+        box.appendChild(row);
+      }
+      refreshRqTotal();
     }
-
-    function getQty(id){ return rqPick.find(x=>x.id===id)?.qty || 0; }
-    function setQty(id,name,price,qty){
-      qty = Math.max(0, Number(qty||0));
-      const i = rqPick.findIndex(x=>x.id===id);
-      if(i===-1 && qty>0) rqPick.push({id,name,price,qty});
-      else if(i>-1){
-        if(qty===0) rqPick.splice(i,1);
-        else rqPick[i].qty = qty;
-      }
-      renderRqPicker();
+    function refreshRqTotal(){
+      let total=0; for(const v of rqSelected.values()) total += v.qty * v.price;
+      $('#rqTotal').textContent = '$'+total.toLocaleString();
     }
+    $('#rqFindItem').addEventListener('input', fillRqPicker);
+    $('#rqCat').addEventListener('change', fillRqPicker);
 
-    $('#rqQ').addEventListener('input', renderRqPicker);
-    $('#rqCat').addEventListener('change', renderRqPicker);
-    $('#rqItemPicker').addEventListener('click', (e)=>{
-      const t=e.target;
-      const dec=t.getAttribute('data-dec');
-      const inc=t.getAttribute('data-inc');
-      if(dec||inc){
-        const id = dec||inc;
-        const it = items.find(x=> (x.id|| (x.name+'|'+x.category))===id);
-        if(!it) return;
-        const price = Number(it.buyPrice ?? Math.round((it.sellPrice||0)*BUY_RATE));
-        const cur = getQty(id);
-        setQty(id, it.name, price, cur + (inc?1:-1));
-      }
-    });
-    $('#rqItemPicker').addEventListener('input', (e)=>{
-      const id = e.target.getAttribute('data-qty'); if(!id) return;
-      const it = items.find(x=> (x.id|| (x.name+'|'+x.category))===id); if(!it) return;
-      const price = Number(it.buyPrice ?? Math.round((it.sellPrice||0)*BUY_RATE));
-      setQty(id, it.name, price, e.target.value);
-    });
-
-    $('#rqSend').addEventListener('click', async (e)=>{
-      e.preventDefault();
+    $('#rqSend').addEventListener('click', async ()=>{
       const ign = $('#rqIGN').value.trim();
-      const disco = $('#rqDisco').value.trim();
+      const disc = $('#rqDiscord').value.trim();
       const type = $('#rqType').value;
       const subject = $('#rqSubject').value.trim();
-      const message = $('#rqMsg').value.trim();
-      const total = rqPick.reduce((s,r)=> s + (r.qty*r.price), 0);
+      const msg = $('#rqMsg').value.trim();
+      const selling = [...rqSelected.values()];
+      let total=0; selling.forEach(s=> total+= s.qty*s.price);
 
       const payload = {
-        ts: Date.now(),
-        status: 'open',
-        ign, discord: disco, type, subject,
-        message,
-        items: rqPick.map(r=>({ id:r.id, name:r.name, qty:r.qty, price:r.price, line:r.qty*r.price })),
+        t: Date.now(),
+        ign, discord: disc, type, subject,
+        message: msg || null,
+        selling: selling.length? selling : null,
         total
       };
       try{
-        await refReq.push(payload);
-        // reset
-        rqPick = []; $('#rqMsg').value=''; $('#rqSubject').value=''; $('#rqIGN').value=''; $('#rqDisco').value='';
-        renderRqPicker();
+        await db.ref(`/shops/${SHOP_ID}/requests`).push(payload);
         dlg.close();
-        alert('Request sent — we’ll reach out on Discord.');
-      }catch(err){
-        console.error(err); alert('Failed to send.');
+        // reset
+        $('#rqIGN').value=''; $('#rqDiscord').value=''; $('#rqType').value='price-check'; $('#rqSubject').value=''; $('#rqMsg').value='';
+        rqSelected.clear(); refreshRqTotal();
+        alert('Request sent! We’ll reach out on Discord.');
+      }catch(e){
+        console.error(e); alert('Failed to send request.');
       }
     });
 
-    /***********************
-     * Download current items (password 44312)
-     ***********************/
-    function toCSV(rows){
-      const header = ['name','category','sell','buy(85%)','stock','notes'];
-      const lines = [header.join(',')];
-      for(const r of rows){
-        const sell = Number(r.sellPrice||0);
-        const buy = Number(r.buyPrice ?? Math.round(sell*BUY_RATE));
-        const vals = [
-          `"${(r.name||'').replace(/"/g,'""')}"`,
-          `"${(r.category||'').replace(/"/g,'""')}"`,
-          sell,
-          buy,
-          (r.stock??''),
-          `"${(r.notes||'').replace(/"/g,'""')}"`
-        ];
-        lines.push(vals.join(','));
-      }
-      return lines.join('\n');
-    }
-
+    /* ===== Download button (CSV export of live items) ===== */
     $('#btnDownload').addEventListener('click', ()=>{
-      const pw = prompt('Enter password to export CSV:');
-      if(pw!=='44312') return alert('Wrong password.');
-      const csv = toCSV(items);
-      const blob = new Blob([csv], {type:'text/csv'});
+      const rows = [['Name','Category','Sell price','Buy(85%)','Notes']];
+      for(const it of items){
+        const sell = Number(it.sellPrice ?? it.price ?? 0);
+        rows.push([it.name||'', it.category||'', sell, Math.round(sell*BUY_RATE), it.notes||'']);
+      }
+      const csv = rows.map(r => r.map(x=>{
+        const s = String(x==null?'':x);
+        return s.includes(',')||s.includes('"') ? `"${s.replace(/"/g,'""')}"` : s;
+      }).join(',')).join('\n');
+
+      const blob = new Blob([csv],{type:'text/csv'});
       const a = document.createElement('a');
       a.href = URL.createObjectURL(blob);
-      a.download = 'shop.csv';
-      a.click();
+      a.download = 'shop_live.csv';
+      document.body.appendChild(a); a.click(); a.remove();
       URL.revokeObjectURL(a.href);
     });
+
+    /* ===== UI wire-ups ===== */
+    $('#btnPokemonMenu').addEventListener('click', ()=>{
+      const m = $('#menuPokemon'); m.classList.toggle('hidden');
+    });
+    $('#menuPokemon').addEventListener('click', (e)=>{
+      if(e.target.tagName==='BUTTON'){
+        ownerFilter = e.target.getAttribute('data-owner') || 'All';
+        $('#ownerFilter').value = ownerFilter;
+        $('#menuPokemon').classList.add('hidden');
+        renderPokemon();
+      }
+    });
+    $('#ownerFilter').addEventListener('change', renderPokemon);
+    $('#searchPk').addEventListener('input', renderPokemon);
+    $('#search').addEventListener('input', renderItems);
+    $('#filterCat').addEventListener('change', renderItems);
+    $('#btnReset').addEventListener('click', ()=>{
+      $('#search').value=''; $('#filterCat').value='All'; renderItems();
+    });
+    $('#btnReload').addEventListener('click', ()=> location.reload());
+
+    // Go!
+    connect();
   </script>
 </body>
 </html>
