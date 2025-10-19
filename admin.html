@@ -6,7 +6,7 @@
   <title>🌸 JJBlossoms — Admin (LIVE)</title>
   <meta name="theme-color" content="#0f172a"/>
 
-  <!-- UI libs -->
+  <!-- UI -->
   <script src="https://cdn.tailwindcss.com"></script>
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;700;900&family=Cinzel:wght@700&display=swap" rel="stylesheet">
   <style>
@@ -34,7 +34,7 @@
     <header class="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3">
       <div>
         <h1 class="brand text-2xl sm:text-3xl font-bold">🌸 JJBlossoms — Admin (LIVE)</h1>
-        <p class="text-slate-600 text-sm">Connect once below, then edit items/stock and add Pokémon. DNA/Dungeon Frags are handled correctly.</p>
+        <p class="text-slate-600 text-sm">Configure once below. Anonymous sign-in; all edits sync to Firebase under your Shop ID.</p>
       </div>
       <div class="flex items-center gap-2">
         <a href="./index.html" class="btn">🏠 Back to site</a>
@@ -51,16 +51,24 @@
       </div>
       <div class="text-xs text-slate-500">
         Firebase Console → Project settings → <b>General</b> → Your apps → Web → copy the config object.
-        Enable <b>Authentication → Anonymous</b> and <b>Realtime Database</b>. (Storage is used for Pokémon images.)
+        Enable <b>Authentication → Anonymous</b>, <b>Realtime Database</b>, and <b>Storage</b>.
       </div>
       <div class="flex items-center gap-2 text-sm">
         <div>Status:</div><div id="status" class="font-semibold text-slate-700">Not connected</div>
       </div>
+
       <div class="flex items-center flex-wrap gap-2">
         <button id="importCsv" class="btn">📥 Import items from <b>shop.csv</b></button>
-        <label class="btn">🧮 Buy % <input id="buyPct" type="number" min="1" max="100" value="85" class="input" style="width:5rem"></label>
-        <button id="recalc" class="btn">↻ Recalculate buy prices</button>
-        <button id="dlCsv" class="btn">⬇️ Download items as CSV</button>
+
+        <div class="flex items-center gap-2">
+          <label class="text-sm text-slate-600">Buy %</label>
+          <input id="buyPct" type="number" min="1" max="100" value="85" class="input w-24" />
+          <button id="recalc" class="btn">🧮 Recalculate buy prices</button>
+        </div>
+
+        <button id="dlItemsCsv" class="btn">⬇️ Download items CSV</button>
+        <button id="dlPkCsv" class="btn">⬇️ Download Pokémon CSV</button>
+        <button id="dlReqCsv" class="btn">⬇️ Download requests CSV</button>
         <button id="clearAll" class="btn">🧹 Clear ALL items</button>
       </div>
     </section>
@@ -124,7 +132,7 @@
           <label class="flex items-center gap-2 text-sm"><input id="pkShiny" type="checkbox"> Shiny</label>
           <label class="flex items-center gap-2 text-sm"><input id="pkNeutered" type="checkbox"> Neutered</label>
 
-          <!-- IVs/EVs -->
+          <!-- IVs / EVs -->
           <div class="col-span-2 grid grid-cols-6 gap-2">
             <div class="text-xs col-span-6 font-semibold">IVs (0–31)</div>
             <input class="input" id="ivHP" type="number" min="0" max="31" placeholder="HP">
@@ -147,7 +155,7 @@
           <input class="input col-span-2" id="pkMoves" placeholder="Moves (comma-separated)">
           <textarea class="input col-span-2" id="pkNotes" placeholder="Extra notes (optional)"></textarea>
 
-          <!-- image upload -->
+          <!-- Image upload -->
           <div class="col-span-2 flex items-center gap-3">
             <input id="pkImg" type="file" accept="image/*" class="input">
             <img id="pkPreview" class="thumb hidden" alt="preview">
@@ -175,8 +183,16 @@
       <div class="flex items-center justify-between">
         <h2 class="brand text-xl">Requests (from site)</h2>
         <div class="flex items-center gap-2">
-          <input id="qReq" class="input" placeholder="Search by IGN/Discord/type">
-          <button id="dlReqCsv" class="btn">⬇️ Export requests CSV</button>
+          <input id="qReq" class="input" placeholder="Search IGN/Discord/type">
+          <select id="reqFilter" class="input">
+            <option value="All">All</option>
+            <option value="price">Price</option>
+            <option value="new">New Item</option>
+            <option value="sell">Sell Items</option>
+            <option value="other">Other</option>
+            <option value="open">Open only</option>
+            <option value="closed">Closed only</option>
+          </select>
         </div>
       </div>
       <div class="overflow-auto rounded-2xl border">
@@ -192,10 +208,11 @@
       </div>
     </section>
 
-    <p class="text-xs text-slate-500">Changes sync instantly to the public site. Use search/filters to narrow, then edit inline or use +/− buttons.</p>
+    <p class="text-xs text-slate-500">Edits save instantly. Export CSV any time for a backup (`shop.csv`).</p>
   </div>
 
 <script>
+/* ---------- constants, state ---------- */
 const $=(s)=>document.querySelector(s);
 const BUY_RATE_DEFAULT=85;
 let BUY_RATE=BUY_RATE_DEFAULT/100;
@@ -203,7 +220,7 @@ let BUY_RATE=BUY_RATE_DEFAULT/100;
 let app,db,auth,storage,refItems,refPk,refReq;
 let items=[], pokemon=[], requests=[];
 
-/* ---------- config helpers ---------- */
+/* ---------- localstorage cfg ---------- */
 const LS='jjb_admin_cfg_v2';
 const tryParse=(s)=>{try{return JSON.parse(s)}catch{return null}};
 const saveCfg=()=>localStorage.setItem(LS, JSON.stringify({ shopId:$('#shopId').value.trim(), cfg:tryParse($('#cfgJson').value) }));
@@ -369,7 +386,7 @@ document.addEventListener('input',(e)=>{
   if(t.matches('input[data-id]')){
     const id=t.getAttribute('data-id'); const field=t.getAttribute('data-field');
     let v=t.value;
-    if(field==='sellPrice'||field==='stock'){ v = v===''?'':Number(v); }
+    if(field==='sellPrice'||field==='stock'){ v = v===''?'': Number(v); }
     patchItem(id,{ [field]: v });
   }
 });
@@ -379,57 +396,95 @@ document.addEventListener('click',(e)=>{
   if(t.dataset.act==='dec'){ const it=items.find(x=>x.id===id); patchItem(id,{stock:Math.max(0,Number(it?.stock||0)-1)}); }
   if(t.dataset.act==='delItem'){ if(confirm('Delete item?')) removeItem(id); }
   if(t.dataset.act==='delPk'){ if(confirm('Delete Pokémon?')) removePk(id); }
-  if(t.dataset.act==='resolveReq'){ patchReq(id,{ status:'resolved', resolvedAt: now() }); }
-  if(t.dataset.act==='delReq'){ if(confirm('Delete request?')) removeReq(id); }
 });
 
-/* requests UI + export */
+/* ---------- requests UI ---------- */
 function fmtDate(ts){ try{const d=new Date(ts||0); return d.toLocaleString();}catch{return ''} }
 function renderReq(){
-  const q=($('#qReq').value||'').toLowerCase();
-  const tb=$('#rowsReq'); tb.innerHTML='';
-  const data=requests.filter(r=>
-    (r.ign||'').toLowerCase().includes(q) ||
-    (r.discord||'').toLowerCase().includes(q) ||
-    (r.type||'').toLowerCase().includes(q)
-  );
+  const q=($('#qReq')?.value||'').toLowerCase();
+  const f=($('#reqFilter')?.value||'All');
+  const tb=$('#rowsReq'); if(!tb) return; tb.innerHTML='';
+  const data=requests.filter(r=>{
+    const matchesQ = [r.ign,r.discord,r.type,r.message].join(' ').toLowerCase().includes(q);
+    const status = r.status || (r.closed?'closed':'open');
+    const typeOk = (f==='All') || (f==='open' && status==='open') || (f==='closed' && status==='closed') || (r.type===f);
+    return matchesQ && typeOk;
+  });
   for(const r of data){
     const details = r.type==='sell'
       ? (r.items||[]).map(i=>`${i.qty}× ${i.name} @ $${i.price}`).join(', ')
       : (r.message||'');
+    const total = r.type==='sell' ? (r.total|| (r.items||[]).reduce((s,i)=> s+i.qty*i.price,0)) : '';
     const tr=document.createElement('tr');
     tr.innerHTML=`
-      <td class="p-2">${fmtDate(r.createdAt)}</td>
-      <td class="p-2">${r.ign||''}</td>
-      <td class="p-2">${r.discord||''}</td>
+      <td class="p-2 whitespace-nowrap">${fmtDate(r.createdAt)}</td>
+      <td class="p-2">${r.ign||''}<div class="text-xs text-slate-500">${r.discord||''}</div></td>
       <td class="p-2">${r.type||''}</td>
       <td class="p-2">${details}</td>
-      <td class="p-2">${r.total ? '$'+r.total : ''}</td>
-      <td class="p-2">${r.status||'open'}</td>
+      <td class="p-2">${total?('$'+total):''}</td>
+      <td class="p-2">${r.status|| (r.closed?'closed':'open')}</td>
       <td class="p-2 flex gap-2">
-        <button class="btn" data-act="resolveReq" data-id="${r.id}">Resolve</button>
-        <button class="btn" data-act="delReq" data-id="${r.id}">Delete</button>
+        <button class="btn" data-req-act="toggle" data-id="${r.id}">${(r.status==='closed'||r.closed)?'Reopen':'Close'}</button>
+        <button class="btn" data-req-act="delete" data-id="${r.id}">Delete</button>
       </td>`;
     tb.appendChild(tr);
   }
 }
-$('#qReq').addEventListener('input', renderReq);
+document.addEventListener('click', (e)=>{
+  const t=e.target; if(!t.matches('[data-req-act]')) return;
+  const id=t.getAttribute('data-id'); if(!id) return;
+  if(t.dataset.reqAct==='toggle'){ const cur=requests.find(x=>x.id===id)||{}; patchReq(id,{ status: (cur.status==='closed'?'open':'closed') }); }
+  if(t.dataset.reqAct==='delete'){ if(confirm('Delete this request?')) removeReq(id); }
+});
+$('#qReq')?.addEventListener('input', renderReq);
+$('#reqFilter')?.addEventListener('change', renderReq);
 
-$('#dlReqCsv').addEventListener('click', ()=>{
-  const rows=[['createdAt','ign','discord','type','details','total','status']];
+/* ---------- CSV export helpers ---------- */
+function escapeCsv(v){ const s=String(v??''); return /[",\n]/.test(s)?`"${s.replace(/"/g,'""')}"`:s; }
+function rowsToCsv(rows){ return rows.map(r=>r.map(escapeCsv).join(',')).join('\n'); }
+
+/* Items CSV */
+document.getElementById('dlItemsCsv').addEventListener('click', ()=>{
+  const pct=Math.round(BUY_RATE*100);
+  const rows=[['Name','Category','Sell','Buy','Stock','Notes']];
+  for(const it of items){
+    const sell=Number(it.sellPrice??it.price??0)||0;
+    const buy =Number.isFinite(Number(it.buyPrice))? Number(it.buyPrice): Math.round(sell*BUY_RATE);
+    rows.push([it.name||'',it.category||'',sell,`${buy} (${pct}%)`,it.stock===''?'':it.stock,it.notes||'']);
+  }
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob([rowsToCsv(rows)],{type:'text/csv'}));
+  a.download='shop.csv'; document.body.appendChild(a); a.click(); a.remove();
+});
+
+/* Pokémon CSV */
+document.getElementById('dlPkCsv').addEventListener('click', ()=>{
+  const rows=[['Owner','Nickname','Species','Level','Nature','Price','Tera','Ball','Held','Ability','Size','Shiny','Neutered','Moves','Notes','ImageUrl']];
+  for(const p of pokemon){
+    rows.push([p.owner||'',p.nickname||'',p.species||'',p.level||'',p.nature||'',p.price||'',p.tera||'',p.ball||'',p.held||'',p.ability||'',p.size||'',p.shiny?1:0,p.neutered?1:0,p.moves||'',p.notes||'',p.imageUrl||'']);
+  }
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob([rowsToCsv(rows)],{type:'text/csv'}));
+  a.download='pokemon.csv'; document.body.appendChild(a); a.click(); a.remove();
+});
+
+/* Requests CSV */
+document.getElementById('dlReqCsv').addEventListener('click', ()=>{
+  const rows=[['When','IGN','Discord','Type','Details','Total','Status']];
   for(const r of requests){
     const details = r.type==='sell'
       ? (r.items||[]).map(i=>`${i.qty}x ${i.name} @ ${i.price}`).join('; ')
       : (r.message||'');
-    rows.push([fmtDate(r.createdAt), r.ign||'', r.discord||'', r.type||'', details, r.total||'', r.status||'open']);
+    const total = r.type==='sell' ? (r.total || (r.items||[]).reduce((s,i)=>s+i.qty*i.price,0)) : '';
+    rows.push([new Date(r.createdAt||0).toISOString(), r.ign||'', r.discord||'', r.type||'', details, total, r.status|| (r.closed?'closed':'open')]);
   }
-  const ws=XLSX.utils.aoa_to_sheet(rows);
-  const wb=XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb,ws,'requests');
-  XLSX.writeFile(wb,'requests_export.csv');
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob([rowsToCsv(rows)],{type:'text/csv'}));
+  a.download='requests.csv'; document.body.appendChild(a); a.click(); a.remove();
 });
 
-/* import CSV into live DB */
-$('#importCsv').addEventListener('click', async ()=>{
+/* ---------- import from shop.csv ---------- */
+document.getElementById('importCsv').addEventListener('click', async ()=>{
   if(!db){ return alert('Connect first (Save config), then try again.'); }
   try{
     const res=await fetch('shop.csv',{cache:'no-store'}); if(!res.ok) return alert('shop.csv not found');
@@ -437,12 +492,14 @@ $('#importCsv').addEventListener('click', async ()=>{
     const wb=XLSX.read(txt,{type:'string'});
     const ws=wb.Sheets[wb.SheetNames[0]];
     const rows=XLSX.utils.sheet_to_json(ws,{header:1,raw:true}); if(!rows.length) return alert('CSV empty');
+
     const headers=rows[0].map(x=>String(x||'').toLowerCase());
     const idxName=headers.findIndex(h=>h.includes('name')||h==='item');
     const idxCat =headers.findIndex(h=>h.includes('cat'));
     const idxPrice=headers.findIndex(h=>h.includes('sell_price')||h.includes('sell price')||h==='price'||h.includes('price')||h.includes('sell'));
     const idxStock=headers.findIndex(h=>h.includes('stock'));
     const idxNotes=headers.findIndex(h=>h.includes('notes')||h.includes('desc'));
+
     for(const r of rows.slice(1)){
       const name=String(r[idxName]||'').trim(); if(!name) continue;
       const category=String(r[idxCat]||'').trim();
@@ -460,26 +517,12 @@ $('#importCsv').addEventListener('click', async ()=>{
   }catch(e){ console.error(e); alert('Import failed'); }
 });
 
-/* download live items to CSV */
-$('#dlCsv').addEventListener('click', ()=>{
-  const rows=[['Name','Category','Sell','Buy(%)','Stock','Notes']];
-  const pct = Math.round(BUY_RATE*100);
-  for(const it of items){
-    const sell=Number(it.sellPrice??it.price??0);
-    const buy = Number.isFinite(Number(it.buyPrice))? Number(it.buyPrice): Math.round(sell*BUY_RATE);
-    rows.push([it.name||'', it.category||'', sell, `${pct}%=${buy}`, it.stock===''?'':it.stock, it.notes||'']);
-  }
-  const ws=XLSX.utils.aoa_to_sheet(rows);
-  const wb=XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb,ws,'items');
-  XLSX.writeFile(wb,'shop.csv');
+/* ---------- buy% + recalc ---------- */
+document.getElementById('buyPct').addEventListener('input', ()=>{
+  const v=Math.max(1,Math.min(100, Number(document.getElementById('buyPct').value||BUY_RATE_DEFAULT)));
+  document.getElementById('buyPct').value=v; BUY_RATE=v/100;
 });
-
-/* buy% + recalc */
-$('#buyPct').addEventListener('input', ()=>{
-  const v=Math.max(1,Math.min(100, Number($('#buyPct').value||BUY_RATE_DEFAULT)));
-  $('#buyPct').value=v; BUY_RATE=v/100;
-});
-$('#recalc').addEventListener('click', ()=>{
+document.getElementById('recalc').addEventListener('click', ()=>{
   if(!db) return alert('Connect first');
   for(const it of items){
     const sell=Number(it.sellPrice??it.price??0);
@@ -488,19 +531,25 @@ $('#recalc').addEventListener('click', ()=>{
   alert('Recalculated using '+Math.round(BUY_RATE*100)+'%');
 });
 
-/* events */
-$('#saveCfg').addEventListener('click', ()=>{ saveCfg(); connect(); });
-$('#reload').addEventListener('click', ()=> connect());
-$('#clearAll').addEventListener('click', async ()=>{
+/* ---------- top buttons ---------- */
+document.getElementById('saveCfg').addEventListener('click', ()=>{ saveCfg(); connect(); });
+document.getElementById('reload').addEventListener('click', ()=> connect());
+document.getElementById('signOut').addEventListener('click', async ()=>{
+  try{ await auth?.signOut(); document.getElementById('status').textContent='Signed out'; }catch(e){ console.error(e); alert('Sign out failed'); }
+});
+document.getElementById('clearAll').addEventListener('click', async ()=>{
   if(!db){ return alert('Connect first (Save config)'); }
   if(!confirm('Delete ALL items for this shop?')) return;
   await refItems.remove(); alert('All items cleared');
 });
-$('#signOut').addEventListener('click', async ()=>{
-  try{ await auth?.signOut(); $('#status').textContent='Signed out'; }catch(e){ console.error(e); alert('Sign out failed'); }
-});
 
-/* boot with your known config to make it easy */
+/* ---------- searches ---------- */
+document.getElementById('qItems').addEventListener('input', renderItems);
+document.getElementById('catItems').addEventListener('change', renderItems);
+document.getElementById('qPk').addEventListener('input', renderPk);
+document.getElementById('pkOwnerFilter').addEventListener('change', renderPk);
+
+/* ---------- boot with known config ---------- */
 document.addEventListener('DOMContentLoaded', ()=>{
   const prefill = {
     apiKey: "AIzaSyAfvM_nSppUkYoRa1Bes2NuE-Bs8vTwcIE",
@@ -512,15 +561,9 @@ document.addEventListener('DOMContentLoaded', ()=>{
     appId: "1:480122553743:web:04bf017d5e16f28fd477fa",
     measurementId: "G-GVCG3PTNVP"
   };
-  if(!$('#cfgJson').value) $('#cfgJson').value = JSON.stringify(prefill);
+  if(!document.getElementById('cfgJson').value) document.getElementById('cfgJson').value = JSON.stringify(prefill);
   const cfg=loadCfg(); if(cfg.shopId){ connect(); }
 });
-
-/* search filters */
-$('#qItems').addEventListener('input', renderItems);
-$('#catItems').addEventListener('change', renderItems);
-$('#qPk').addEventListener('input', renderPk);
-$('#pkOwnerFilter').addEventListener('change', renderPk);
 </script>
 </body>
 </html>
