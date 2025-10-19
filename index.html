@@ -36,7 +36,7 @@
         <span class="text-2xl brand">🌸 <span class="font-bold">JJBLOSSOMS</span> <span class="text-sm align-middle">SHOP</span></span>
         <span id="dataSource" class="pill text-slate-700">Data source: <b>CSV</b></span>
       </div>
-      <nav class="flex items-center gap-2">
+      <nav class="flex items-center gap-2 relative">
         <div class="relative">
           <button id="pkMenu" class="btn">🧬 Pokémon For Sale ▾</button>
           <div id="pkDropdown" class="hidden dropdown mt-1 w-48 bg-white border rounded-xl shadow-soft">
@@ -45,13 +45,23 @@
             <a href="#pokemon" data-owner="Jonfiin" class="block px-3 py-2 hover:bg-pink-50">Jonfiin</a>
           </div>
         </div>
+
+        <!-- Download Menu (password protected) -->
+        <div class="relative">
+          <button id="dlMenuBtn" class="btn">⬇️ Download ▾</button>
+          <div id="dlMenu" class="hidden dropdown mt-1 w-56 bg-white border rounded-xl shadow-soft">
+            <button id="exportItems" class="w-full text-left px-3 py-2 hover:bg-pink-50">Items CSV</button>
+            <button id="exportPk" class="w-full text-left px-3 py-2 hover:bg-pink-50">Pokémon CSV</button>
+          </div>
+        </div>
+
         <a href="./admin.html" class="btn">🛠️ Admin</a>
-        <button id="reloadBtn" class="btn">🔄 Reload data</button>
+        <button id="reloadBtn" class="btn">🔄 Reload</button>
         <button id="reqBtn" class="btn">📩 Requests</button>
       </nav>
     </header>
 
-    <!-- Pokémon for sale (moved to top) -->
+    <!-- Pokémon for sale (top) -->
     <section id="pokemon" class="space-y-3">
       <div class="flex items-center justify-between">
         <h2 class="brand text-xl">🧬 Pokémon For Sale</h2>
@@ -82,7 +92,7 @@
     <footer class="text-center text-xs text-slate-500 py-6">🌸 JJBlossoms — where Mewtwo shops for deals</footer>
   </div>
 
-  <!-- Requests modal (ENABLED) -->
+  <!-- Requests modal -->
   <dialog id="reqDialog" class="rounded-2xl p-0 w-[min(720px,95vw)]">
     <form id="reqForm" method="dialog">
       <div class="p-4 border-b brand text-lg">Requests</div>
@@ -105,7 +115,7 @@
         <div id="sellBuilder" class="hidden space-y-2 border rounded-xl p-2">
           <div class="flex items-center justify-between">
             <div class="font-semibold">Add items you’re selling</div>
-            <div class="text-xs text-slate-500">Total updates as you change quantities (uses our Buy price)</div>
+            <div class="text-xs text-slate-500">Total uses our current Buy %</div>
           </div>
           <div class="flex flex-wrap gap-2">
             <input id="sellSearch" class="rounded-xl border px-3 py-2 flex-1 min-w-[220px]" placeholder="Search shop items...">
@@ -134,8 +144,8 @@
   </dialog>
 
   <script>
-    // --- Read Admin's stored Firebase config + Buy% (if any)
-    const LS='jjb_admin_cfg_v3'; // must match Admin
+    // ---------- Config from Admin (and fallback)
+    const LS='jjb_admin_cfg_v3';
     let cfg=null, shopId='jjblossoms', buyRate=0.85;
     try{
       const raw=localStorage.getItem(LS);
@@ -159,9 +169,9 @@
       };
     }
 
-    // Live data
+    // ---------- Live data
     let db, items=[], pokemon=[];
-    const SPRITES = ["1.png","2.png","3.png","4.png","5.png","46.png","76.png","566.png"]; // for categories
+    const SPRITES = ["1.png","2.png","3.png","4.png","5.png","46.png","76.png","566.png"]; // category icons
     const catIconMap = new Map();
     const $=sel=>document.querySelector(sel);
 
@@ -171,7 +181,6 @@
         await firebase.auth().signInAnonymously();
         db=firebase.database();
         $('#dataSource').innerHTML = 'Data source: <b>Firebase (Live)</b>';
-
         const refItems=db.ref(`/shops/${shopId}/items`);
         const refPk   =db.ref(`/shops/${shopId}/pokemon`);
         refItems.on('value',snap=>{ const v=snap.val()||{}; items=Object.values(v); renderAll(); refreshSellBuilder(); });
@@ -182,7 +191,7 @@
       }
     }
 
-    // --- Category icon
+    // ---------- Icons per category
     function iconFor(cat){
       if(!cat) return "";
       if(!catIconMap.has(cat)){
@@ -194,7 +203,7 @@
     }
     function hash(s){ let h=0; for(let i=0;i<s.length;i++){ h=((h<<5)-h)+s.charCodeAt(i); h|=0; } return h; }
 
-    // --- Render Pokémon (with optional image)
+    // ---------- Pokémon (with optional image)
     function renderPokemon(){
       const owner=$('#pkOwnerFilter').value;
       const q=($('#qPk').value||'').toLowerCase();
@@ -206,7 +215,7 @@
       for(const p of data){
         const img = p.image ? `<img src="${p.image}" class="w-10 h-10 object-contain" onerror="this.style.display='none'">` : '';
         const ivs = p.ivs ? `${p.ivs.hp||0}/${p.ivs.atk||0}/${p.ivs.def||0}/${p.ivs.spa||0}/${p.ivs.spd||0}/${p.ivs.spe||0}` : '';
-        const evs = p.evs ? ${"`"}${"${p.evs.hp||0}/${p.evs.atk||0}/${p.evs.def||0}/${p.evs.spa||0}/${p.evs.spd||0}/${p.evs.spe||0}"}${"`"} : '';
+        const evs = p.evs ? `${p.evs.hp||0}/${p.evs.atk||0}/${p.evs.def||0}/${p.evs.spa||0}/${p.evs.spd||0}/${p.evs.spe||0}` : '';
         const flags=[p.shiny?'✨ Shiny':null,p.neutered?'Neutered':null].filter(Boolean).join(' · ');
         const card=document.createElement('div'); card.className='card p-3 flex flex-col gap-2 hover:shadow-soft';
         card.innerHTML=`
@@ -238,7 +247,7 @@
       }
     }
 
-    // --- Render items
+    // ---------- Items list
     function renderAll(){
       const q=($('#q').value||'').toLowerCase();
       const catSel=$('#cat').value||'All';
@@ -253,7 +262,7 @@
         cats.get(key).push(it);
       }
 
-      // fill category select
+      // category select
       const sel=$('#cat'); const seen=new Set(['All']);
       for(const it of items){ if(it.category) seen.add(it.category); }
       const cur=sel.value; sel.innerHTML=''; for(const k of [...seen]) sel.add(new Option(k,k)); sel.value = [...seen].includes(cur)?cur:'All';
@@ -291,7 +300,7 @@
       }
     }
 
-    // --- Requests modal (ENABLED)
+    // ---------- Requests (enabled)
     const reqDialog = $('#reqDialog');
     const reqForm   = $('#reqForm');
     const reqStatus = $('#reqStatus');
@@ -305,12 +314,10 @@
     let sellSelected = {}; // id -> {name, qty, buyPrice}
 
     function refreshSellBuilder(){
-      // fill category dropdown for sell builder
       const set = new Set(items.map(i=>i.category).filter(Boolean));
       const cur = sellCat.value || 'All';
       sellCat.innerHTML = '<option value="All">All categories</option>' + [...set].sort().map(c=>`<option>${c}</option>`).join('');
       sellCat.value = [...set].includes(cur) ? cur : 'All';
-      // render list
       drawSellChoices();
       computeSellTotal();
     }
@@ -360,9 +367,9 @@
     sellSearch.addEventListener('input', drawSellChoices);
     sellCat.addEventListener('change', drawSellChoices);
 
-    // handle quantity edits in builder
     document.addEventListener('click', (e)=>{
       const t=e.target;
+      // seller qty controls
       if(t.dataset.act==='qty+' || t.dataset.act==='qty-'){
         const id=t.dataset.id;
         const it = items.find(x=>x.id===id);
@@ -379,43 +386,14 @@
         drawSellChoices();
         computeSellTotal();
       }
-    });
-    document.addEventListener('input', (e)=>{
-      const t=e.target;
-      if(t.matches('input[data-field="qty"]')){
-        const id=t.getAttribute('data-id');
-        const it = items.find(x=>x.id===id);
-        if(!it) return;
-        const sell = Math.round(Number(it.sellPrice ?? it.price ?? 0));
-        const buy  = Math.round(sell * buyRate);
-        const qty = Math.max(0, Number(t.value||0));
-        if(qty>0){
-          sellSelected[id] = { name: it.name, buyPrice: buy, qty };
-        } else {
-          delete sellSelected[id];
-        }
-        computeSellTotal();
-      }
+
+      // menus
+      if(t.id==='pkMenu'){ $('#pkDropdown').classList.toggle('hidden'); }
+      if(t.id==='dlMenuBtn'){ $('#dlMenu').classList.toggle('hidden'); }
+      if(!t.closest('#dlMenu') && t.id!=='dlMenuBtn'){ $('#dlMenu')?.classList.add('hidden'); }
+      if(!t.closest('#pkDropdown') && t.id!=='pkMenu'){ $('#pkDropdown')?.classList.add('hidden'); }
     });
 
-    // --- UI hooks
-    $('#pkMenu').addEventListener('click',()=>{
-      $('#pkDropdown').classList.toggle('hidden');
-    });
-    $('#pkDropdown').addEventListener('click',(e)=>{
-      if(e.target.matches('[data-owner]')){
-        $('#pkDropdown').classList.add('hidden');
-        $('#pkOwnerFilter').value=e.target.getAttribute('data-owner');
-        location.hash='#pokemon'; renderPokemon();
-      }
-    });
-    $('#reloadBtn').addEventListener('click',()=> location.reload());
-    $('#reset').addEventListener('click',()=>{ $('#q').value=''; $('#cat').value='All'; renderAll(); });
-    $('#q').addEventListener('input', renderAll); $('#cat').addEventListener('change', renderAll);
-    $('#pkOwnerFilter').addEventListener('change', renderPokemon); $('#qPk').addEventListener('input', renderPokemon);
-    $('#reqBtn').addEventListener('click',()=> reqDialog.showModal());
-
-    // submit request
     document.getElementById('reqSubmit').addEventListener('click', async (e)=>{
       e.preventDefault();
       if(!db){ reqStatus.textContent='Please open Admin and Save config first.'; return; }
@@ -452,7 +430,99 @@
       }
     });
 
-    // Connect now
+    // ---------- CSV export (password 44312)
+    const EXPORT_PASS="44312";
+    function requireExportAuth(){
+      if(sessionStorage.getItem("jjb_exports_ok")==="1") return true;
+      const entered = prompt("Enter download password");
+      if(entered===EXPORT_PASS){ sessionStorage.setItem("jjb_exports_ok","1"); return true; }
+      alert("Wrong password."); return false;
+    }
+    function csvEscape(val){ if(val==null) return ''; const s=String(val); return /[\",\n]/.test(s) ? `"${s.replace(/"/g,'""')}"` : s; }
+    function downloadCsv(filename, rows){
+      const csv = rows.map(r=>r.map(csvEscape).join(',')).join('\n');
+      const blob = new Blob([csv], {type:'text/csv;charset=utf-8;'});
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a'); a.href=url; a.download=filename; document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
+    }
+    function buildItemsCsvRows(){
+      const header=['Name','Category','Sell Price','Buy Price','Stock','Notes','ID','UpdatedAt'];
+      const rows=[header];
+      for(const it of (items||[])){
+        const sell = Math.round(Number(it.sellPrice ?? it.price ?? 0));
+        const buy  = Math.round(sell * buyRate);
+        rows.push([
+          it.name ?? '',
+          it.category ?? '',
+          sell,
+          buy,
+          (it.stock===''||it.stock==null)?'':Number(it.stock),
+          it.notes ?? '',
+          it.id ?? '',
+          it._ts ? new Date(it._ts).toISOString() : ''
+        ]);
+      }
+      return rows;
+    }
+    function buildPkCsvRows(){
+      const header=['Owner','Species','Nickname','Level','Nature','Price','Shiny','Neutered','Tera','Ball','Held','Ability','Size','IVs','EVs','Moves','Notes','ID','UpdatedAt','Image'];
+      const rows=[header];
+      for(const p of (pokemon||[])){
+        const ivs = p.ivs ? `${p.ivs.hp||0}/${p.ivs.atk||0}/${p.ivs.def||0}/${p.ivs.spa||0}/${p.ivs.spd||0}/${p.ivs.spe||0}` : '';
+        const evs = p.evs ? `${p.evs.hp||0}/${p.evs.atk||0}/${p.evs.def||0}/${p.evs.spa||0}/${p.evs.spd||0}/${p.evs.spe||0}` : '';
+        rows.push([
+          p.owner ?? '',
+          p.species ?? '',
+          p.nickname ?? '',
+          p.level ?? '',
+          p.nature ?? '',
+          Math.round(Number(p.price||0)),
+          p.shiny ? 'Yes':'No',
+          p.neutered ? 'Yes':'No',
+          p.tera ?? '',
+          p.ball ?? '',
+          p.held ?? '',
+          p.ability ?? '',
+          p.size ?? '',
+          ivs,
+          evs,
+          p.moves ?? '',
+          p.notes ?? '',
+          p.id ?? '',
+          p._ts ? new Date(p._ts).toISOString() : '',
+          p.image ?? ''
+        ]);
+      }
+      return rows;
+    }
+    document.getElementById('exportItems')?.addEventListener('click', ()=>{
+      if(!requireExportAuth()) return;
+      if(!items || !items.length){ alert('No items loaded yet.'); return; }
+      downloadCsv('jjblossoms_items.csv', buildItemsCsvRows());
+    });
+    document.getElementById('exportPk')?.addEventListener('click', ()=>{
+      if(!requireExportAuth()) return;
+      if(!pokemon || !pokemon.length){ alert('No Pokémon loaded yet.'); return; }
+      downloadCsv('jjblossoms_pokemon.csv', buildPkCsvRows());
+    });
+
+    // ---------- Top menus & basic UI
+    document.getElementById('pkDropdown')?.addEventListener('click',(e)=>{
+      if(e.target.matches('[data-owner]')){
+        document.getElementById('pkDropdown').classList.add('hidden');
+        document.getElementById('pkOwnerFilter').value=e.target.getAttribute('data-owner');
+        location.hash='#pokemon'; renderPokemon();
+      }
+    });
+    document.getElementById('pkMenu').addEventListener('click',()=> document.getElementById('pkDropdown').classList.toggle('hidden'));
+    document.getElementById('dlMenuBtn').addEventListener('click',()=> document.getElementById('dlMenu').classList.toggle('hidden'));
+    document.getElementById('reloadBtn').addEventListener('click',()=> location.reload());
+    document.getElementById('reset').addEventListener('click',()=>{ $('#q').value=''; $('#cat').value='All'; renderAll(); });
+    $('#q').addEventListener('input', renderAll); $('#cat').addEventListener('change', renderAll);
+    $('#pkOwnerFilter').addEventListener('change', renderPokemon); $('#qPk').addEventListener('input', renderPokemon);
+    $('#reqBtn').addEventListener('click',()=> reqDialog.showModal());
+
+    // Connect to live data
     connect();
   </script>
 </body>
