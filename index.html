@@ -3,527 +3,383 @@
 <head>
   <meta charset="utf-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
-  <title>🌸 JJBlossoms Shop — Live</title>
-  <meta name="theme-color" content="#f8eaf0"/>
+  <title>🌸 JJBlossoms — Shop (Live)</title>
+  <meta name="theme-color" content="#f7ddea"/>
   <script src="https://cdn.tailwindcss.com"></script>
-  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;700;900&family=Cinzel:wght@700&display=swap" rel="stylesheet">
-  <!-- Firebase (compat) -->
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@700&family=Noto+Sans+JP:wght@400;700&display=swap" rel="stylesheet">
+
+  <!-- Firebase (compat so we can keep code simple) -->
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+
   <style>
-    :root{ --ink:#0f172a; }
-    .brand{ font-family:'Cinzel','Noto Sans JP',system-ui,Segoe UI,Roboto,Helvetica,Arial }
-    .card{ border:1px solid #f1d9e3; background:#fff; border-radius:16px; }
-    .btn{ display:inline-flex; align-items:center; gap:.5rem; border:1px solid #e2d3da; background:#fff; padding:.5rem .8rem; border-radius:.75rem; }
-    .chip{ border:1px solid #f1d9e3; padding:.15rem .45rem; border-radius:.75rem; font-size:.75rem; white-space:nowrap; }
-    .pill{ padding:.15rem .6rem; border-radius:999px; font-size:.75rem; border:1px solid #e6e6e6; }
-    .shadow-soft{ box-shadow: 0 6px 22px rgba(40,20,40,.06); }
-    .dropdown{ position:absolute; z-index:9999; }
-    dialog::backdrop{ background:rgba(0,0,0,.35); }
+    .brand{font-family:'Cinzel','Noto Sans JP',system-ui,Segoe UI,Roboto,Helvetica,Arial}
+    .btn{display:inline-flex;align-items:center;gap:.5rem;padding:.5rem .9rem;border-radius:.75rem;border:1px solid #e5e7eb;background:#fff}
+    .chip{display:inline-flex;align-items:center;gap:.25rem;padding:.15rem .5rem;border-radius:9999px;background:#f1f5f9;border:1px solid #e2e8f0;font-size:12px}
+    .input{width:100%;padding:.55rem .75rem;border:1px solid #cbd5e1;border-radius:.75rem}
+    .card{border:1px solid #e2e8f0;border-radius:1rem;background:#fff}
   </style>
 </head>
-<body class="bg-[#fdeff4]">
-  <div class="max-w-6xl mx-auto px-4 lg:px-2 py-4 space-y-4">
-    <!-- Banner -->
-    <div class="rounded-2xl overflow-hidden border border-[#f1d9e3] shadow-soft">
-      <img src="Header.jpg" alt="JJBlossoms banner" class="w-full h-44 object-cover object-center" onerror="this.style.display='none'">
-    </div>
-
-    <!-- Header bar -->
-    <header class="flex flex-wrap gap-3 items-center justify-between relative z-[1000]">
-      <div class="flex items-center gap-2">
-        <span class="text-2xl brand">🌸 <span class="font-bold">JJBLOSSOMS</span> <span class="text-sm align-middle">SHOP</span></span>
-        <span id="dataSource" class="pill text-slate-700">Data source: <b>CSV</b></span>
+<body class="bg-rose-50">
+  <div class="max-w-6xl mx-auto p-4 sm:p-6 space-y-4">
+    <header class="flex items-center justify-between gap-2">
+      <div class="flex items-center gap-3">
+        <img src="./Header.jpg" class="h-20 rounded-xl object-cover" alt="">
+        <div>
+          <h1 class="brand text-2xl font-bold">🌸 JJBlossoms <span class="text-sm align-middle chip">Data source: Firebase (Live)</span></h1>
+          <div class="text-xs text-slate-500">Buy price = % of item price (rounded).</div>
+        </div>
       </div>
-      <nav class="flex items-center gap-2 relative">
-        <div class="relative">
-          <button id="pkMenu" class="btn">🧬 Pokémon For Sale ▾</button>
-          <div id="pkDropdown" class="hidden dropdown mt-1 w-48 bg-white border rounded-xl shadow-soft">
-            <a href="#pokemon" data-owner="All" class="block px-3 py-2 hover:bg-pink-50">All</a>
-            <a href="#pokemon" data-owner="Yerttty" class="block px-3 py-2 hover:bg-pink-50">Yerttty</a>
-            <a href="#pokemon" data-owner="Jonfiin" class="block px-3 py-2 hover:bg-pink-50">Jonfiin</a>
-          </div>
-        </div>
-
-        <!-- Download Menu (password protected) -->
-        <div class="relative">
-          <button id="dlMenuBtn" class="btn">⬇️ Download ▾</button>
-          <div id="dlMenu" class="hidden dropdown mt-1 w-56 bg-white border rounded-xl shadow-soft">
-            <button id="exportItems" class="w-full text-left px-3 py-2 hover:bg-pink-50">Items CSV</button>
-            <button id="exportPk" class="w-full text-left px-3 py-2 hover:bg-pink-50">Pokémon CSV</button>
-          </div>
-        </div>
-
-        <a href="./admin.html" class="btn">🛠️ Admin</a>
-        <button id="reloadBtn" class="btn">🔄 Reload</button>
-        <button id="reqBtn" class="btn">📩 Requests</button>
-      </nav>
+      <div class="flex items-center gap-2">
+        <button id="btnDownload" class="btn">⬇️ Download CSV</button>
+        <button id="btnAdmin" class="btn">🛠️ Admin</button>
+        <button id="btnReload" class="btn">🔄 Reload data</button>
+        <button id="btnRequests" class="btn relative">📨 Requests</button>
+      </div>
     </header>
 
-    <!-- Pokémon for sale (top) -->
-    <section id="pokemon" class="space-y-3">
+    <!-- Pokémon for sale preview (kept simple: first few) -->
+    <section class="card p-4 space-y-3">
       <div class="flex items-center justify-between">
-        <h2 class="brand text-xl">🧬 Pokémon For Sale</h2>
-        <div class="flex gap-2">
-          <select id="pkOwnerFilter" class="rounded-xl border border-[#f1d9e3] px-3 py-2">
-            <option>All</option><option>Yerttty</option><option>Jonfiin</option>
-          </select>
-          <input id="qPk" class="rounded-xl border border-[#f1d9e3] px-3 py-2" placeholder="Search Pokémon...">
+        <h2 class="brand text-xl">Pokémon For Sale</h2>
+        <input id="qPk" class="input max-w-xs" placeholder="Search Pokémon…">
+      </div>
+      <div id="pkGrid" class="grid sm:grid-cols-2 lg:grid-cols-3 gap-3"></div>
+    </section>
+
+    <!-- Items (cards) -->
+    <section class="card p-4 space-y-3">
+      <div class="flex items-center justify-between gap-2">
+        <h2 class="brand text-xl">Items</h2>
+        <div class="flex items-center gap-2">
+          <input id="qItems" class="input" placeholder="Search items, categories…">
+          <select id="catItems" class="input"></select>
         </div>
       </div>
-      <div id="pkGrid" class="grid md:grid-cols-2 gap-3"></div>
+      <div id="itemsWrap" class="space-y-6"></div>
     </section>
-
-    <!-- Search / filter for items -->
-    <section class="card p-3 md:p-4">
-      <div class="flex flex-wrap gap-2 items-center">
-        <input id="q" class="flex-1 min-w-[240px] rounded-xl border border-[#f1d9e3] px-3 py-2" placeholder="Search items, categories...">
-        <select id="cat" class="rounded-xl border border-[#f1d9e3] px-3 py-2">
-          <option value="All">All</option>
-        </select>
-        <button id="reset" class="btn">Reset</button>
-      </div>
-    </section>
-
-    <!-- Items list -->
-    <div id="itemsWrap" class="space-y-8"></div>
-
-    <footer class="text-center text-xs text-slate-500 py-6">🌸 JJBlossoms — where Mewtwo shops for deals</footer>
   </div>
 
-  <!-- Requests modal -->
-  <dialog id="reqDialog" class="rounded-2xl p-0 w-[min(720px,95vw)]">
-    <form id="reqForm" method="dialog">
-      <div class="p-4 border-b brand text-lg">Requests</div>
-      <div class="p-4 text-sm space-y-3">
-        <div class="grid grid-cols-2 gap-2">
-          <input id="reqIGN" class="rounded-xl border px-3 py-2" placeholder="IGN (in-game name)" required>
-          <input id="reqDiscord" class="rounded-xl border px-3 py-2" placeholder="Discord handle" required>
-        </div>
-        <div class="grid grid-cols-2 gap-2">
-          <select id="reqType" class="rounded-xl border px-3 py-2" required>
-            <option value="price-check">Price check / Request new price</option>
-            <option value="item-request">Request new item</option>
-            <option value="apply-supplier">Apply as supplier</option>
-            <option value="selling-items">Selling items</option>
-          </select>
-          <input id="reqSubject" class="rounded-xl border px-3 py-2" placeholder="Subject / Item name (optional)">
-        </div>
-
-        <!-- Selling items builder -->
-        <div id="sellBuilder" class="hidden space-y-2 border rounded-xl p-2">
-          <div class="flex items-center justify-between">
-            <div class="font-semibold">Add items you’re selling</div>
-            <div class="text-xs text-slate-500">Total uses our current Buy %</div>
-          </div>
-          <div class="flex flex-wrap gap-2">
-            <input id="sellSearch" class="rounded-xl border px-3 py-2 flex-1 min-w-[220px]" placeholder="Search shop items...">
-            <select id="sellCat" class="rounded-xl border px-3 py-2">
-              <option value="All">All categories</option>
-            </select>
-          </div>
-          <div id="sellList" class="max-h-60 overflow-auto border rounded-lg p-2 grid sm:grid-cols-2 gap-2"></div>
-          <div class="flex items-center justify-between">
-            <div class="text-sm text-slate-600">Selected</div>
-            <div class="text-base font-semibold">Estimated total: $<span id="sellTotal">0</span></div>
-          </div>
-        </div>
-
-        <textarea id="reqBody" class="rounded-xl border px-3 py-2 w-full" rows="4" placeholder="Details / questions..."></textarea>
-        <div class="text-xs text-slate-500">Submitted to Firebase → <code>/shops/{shopId}/requests</code></div>
+  <!-- Request Modal -->
+  <dialog id="dlgReq" class="w-[min(960px,95vw)] rounded-2xl border p-0">
+    <form method="dialog" class="p-0 m-0">
+      <div class="p-4 border-b flex items-center justify-between">
+        <div class="brand font-bold text-lg">Requests</div>
+        <button class="btn" value="cancel">Close</button>
       </div>
-      <div class="p-3 flex justify-between items-center border-t">
-        <div id="reqStatus" class="text-xs text-slate-500"></div>
-        <div class="flex gap-2">
-          <button value="cancel" class="btn">Close</button>
-          <button id="reqSubmit" class="btn" value="confirm">Send</button>
+      <div class="p-4 space-y-3">
+        <div class="grid grid-cols-2 gap-3">
+          <input id="rqIGN"  class="input" placeholder="IGN (in-game name)">
+          <input id="rqDisc" class="input" placeholder="Discord handle">
+          <select id="rqType" class="input">
+            <option value="price-check">Price check / Request new price</option>
+            <option value="selling-items">Selling items</option>
+            <option value="other">Other / question</option>
+          </select>
+          <input id="rqSubject" class="input" placeholder="Subject / item name (optional)">
         </div>
+
+        <div class="text-xs text-slate-500">Add items you're selling (uses our current buy %):</div>
+        <div class="flex items-center gap-2">
+          <input id="rqSearch" class="input" placeholder="Search shop items…" />
+          <select id="rqCat" class="input max-w-[220px]"></select>
+        </div>
+
+        <div id="rqItems" class="grid sm:grid-cols-2 lg:grid-cols-3 gap-2"></div>
+
+        <div>
+          <div class="text-xs text-slate-500">Selected</div>
+          <div id="rqSelected" class="text-sm p-2 border rounded-lg bg-slate-50 min-h-[2rem]"></div>
+          <div class="text-right text-sm mt-1">Estimated total: <b id="rqTotal">$0</b></div>
+        </div>
+
+        <textarea id="rqMsg" class="input h-28" placeholder="Details / questions…"></textarea>
+        <div class="text-xs text-slate-500">Submitted to Firebase → <code>/shops/&lt;shop&gt;/requests</code></div>
+      </div>
+      <div class="p-4 border-t flex items-center justify-end gap-2">
+        <button class="btn" value="cancel">Close</button>
+        <button id="rqSend" class="btn">Send</button>
       </div>
     </form>
   </dialog>
 
   <script>
-    // ---------- Config from Admin (and fallback)
-    const LS='jjb_admin_cfg_v3';
-    let cfg=null, shopId='jjblossoms', buyRate=0.85;
-    try{
-      const raw=localStorage.getItem(LS);
-      if(raw){
-        const j=JSON.parse(raw);
-        if(j?.cfg) cfg=j.cfg;
-        if(j?.shopId) shopId=j.shopId;
-        if(Number.isFinite(j?.buyRate)) buyRate = Math.max(0, Math.min(100, Number(j.buyRate))) / 100;
-      }
-    }catch{}
-    if(!cfg){
-      cfg={
-        apiKey: "AIzaSyAfvM_nSppUkYoRa1Bes2NuE-Bs8vTwcIE",
-        authDomain: "jjblossom-35083.firebaseapp.com",
-        databaseURL: "https://jjblossom-35083-default-rtdb.firebaseio.com",
-        projectId: "jjblossom-35083",
-        storageBucket: "jjblossom-35083.firebasestorage.app",
-        messagingSenderId: "480122553743",
-        appId: "1:480122553743:web:04bf017d5e16f28fd477fa",
-        measurementId: "G-GVCG3PTNVP"
-      };
-    }
+    /***********************
+     * Firebase connection *
+     ***********************/
+    const SHOP_ID = 'jjblossoms';  // <- your shop id
+    const FB = {
+      apiKey: "AIzaSyAfvM_nSppUkYoRa1Bes2NuE-Bs8vTwcIE",
+      authDomain: "jjblossom-35083.firebaseapp.com",
+      databaseURL: "https://jjblossom-35083-default-rtdb.firebaseio.com",
+      projectId: "jjblossom-35083",
+      storageBucket: "jjblossom-35083.firebasestorage.app",
+      messagingSenderId: "480122553743",
+      appId: "1:480122553743:web:04bf017d5e16f28fd477fa",
+      measurementId: "G-GVCG3PTNVP"
+    };
+    const app  = firebase.initializeApp(FB);
+    const db   = firebase.database();
+    const refItems = db.ref(`/shops/${SHOP_ID}/items`);
+    const refPk    = db.ref(`/shops/${SHOP_ID}/pokemon`);
+    const refReq   = db.ref(`/shops/${SHOP_ID}/requests`);
 
-    // ---------- Live data
-    let db, items=[], pokemon=[];
-    const SPRITES = ["1.png","2.png","3.png","4.png","5.png","46.png","76.png","566.png"]; // category icons
-    const catIconMap = new Map();
-    const $=sel=>document.querySelector(sel);
+    /****************
+     * Local state  *
+     ****************/
+    let ITEMS = [];  // {id,name,category,sellPrice,buyPrice,...}
+    let POKES = [];
+    const BUY_RATE = 0.85; // fallback if item.buyPrice missing
 
-    async function connect(){
-      try{
-        const app=firebase.apps.length? firebase.app(): firebase.initializeApp(cfg);
-        await firebase.auth().signInAnonymously();
-        db=firebase.database();
-        $('#dataSource').innerHTML = 'Data source: <b>Firebase (Live)</b>';
-        const refItems=db.ref(`/shops/${shopId}/items`);
-        const refPk   =db.ref(`/shops/${shopId}/pokemon`);
-        refItems.on('value',snap=>{ const v=snap.val()||{}; items=Object.values(v); renderAll(); refreshSellBuilder(); });
-        refPk.on('value',snap=>{ const v=snap.val()||{}; pokemon=Object.values(v); renderPokemon(); });
-      }catch(e){
-        console.warn('Firebase connect failed', e);
-        $('#dataSource').innerHTML = 'Data source: <b>CSV (fallback)</b>';
-      }
-    }
+    const $ = s => document.querySelector(s);
+    const $$ = s => [...document.querySelectorAll(s)];
+    const asMoney = n => '$' + Math.round(Number(n||0)).toLocaleString();
 
-    // ---------- Icons per category
-    function iconFor(cat){
-      if(!cat) return "";
-      if(!catIconMap.has(cat)){
-        const idx = Math.abs(hash(cat)) % SPRITES.length;
-        catIconMap.set(cat, SPRITES[idx]);
-      }
-      const file = catIconMap.get(cat);
-      return `<img src="${file}" class="w-5 h-5 object-contain" onerror="this.style.display='none'">`;
-    }
-    function hash(s){ let h=0; for(let i=0;i<s.length;i++){ h=((h<<5)-h)+s.charCodeAt(i); h|=0; } return h; }
-
-    // ---------- Pokémon (with optional image)
+    /**********************
+     * Render – Pokémon   *
+     **********************/
     function renderPokemon(){
-      const owner=$('#pkOwnerFilter').value;
-      const q=($('#qPk').value||'').toLowerCase();
-      const grid=$('#pkGrid'); grid.innerHTML='';
-      const data=pokemon.filter(p=> (owner==='All'||p.owner===owner) && (
-        (p.species||'').toLowerCase().includes(q) || (p.nickname||'').toLowerCase().includes(q) ||
-        (p.nature||'').toLowerCase().includes(q) || (p.notes||'').toLowerCase().includes(q)
-      ));
-      for(const p of data){
-        const img = p.image ? `<img src="${p.image}" class="w-10 h-10 object-contain" onerror="this.style.display='none'">` : '';
-        const ivs = p.ivs ? `${p.ivs.hp||0}/${p.ivs.atk||0}/${p.ivs.def||0}/${p.ivs.spa||0}/${p.ivs.spd||0}/${p.ivs.spe||0}` : '';
-        const evs = p.evs ? `${p.evs.hp||0}/${p.evs.atk||0}/${p.evs.def||0}/${p.evs.spa||0}/${p.evs.spd||0}/${p.evs.spe||0}` : '';
-        const flags=[p.shiny?'✨ Shiny':null,p.neutered?'Neutered':null].filter(Boolean).join(' · ');
-        const card=document.createElement('div'); card.className='card p-3 flex flex-col gap-2 hover:shadow-soft';
-        card.innerHTML=`
-          <div class="flex items-center justify-between gap-2">
+      const q = ($('#qPk').value||'').toLowerCase();
+      const hit = POKES.filter(p =>
+        (p.species||'').toLowerCase().includes(q) ||
+        (p.nickname||'').toLowerCase().includes(q) ||
+        (p.nature||'').toLowerCase().includes(q)
+      ).slice(0,12);
+      const host = $('#pkGrid'); host.innerHTML='';
+      hit.forEach(p=>{
+        const div=document.createElement('div');
+        div.className='p-3 rounded-xl border bg-white';
+        div.innerHTML = `
+          <div class="flex items-center justify-between">
+            <div class="font-semibold">${p.nickname?`${p.nickname} (${p.species})`:p.species}</div>
+            <div class="chip">${asMoney(p.price)}</div>
+          </div>
+          <div class="text-xs text-slate-600 mt-1">Lv ${p.level||1} — ${p.nature||''} ${p.shiny?'• ✨Shiny':''}</div>
+          ${p.img ? `<img src="${p.img}" class="mt-2 h-28 w-full object-contain">` : ''}
+          ${p.notes? `<div class="mt-2 text-xs text-slate-600">${p.notes}</div>`:''}
+        `;
+        host.appendChild(div);
+      });
+    }
+
+    /**********************
+     * Render – Items     *
+     **********************/
+    function fillItemCats(){
+      const set = new Set(ITEMS.map(i=>i.category).filter(Boolean));
+      const sel = $('#catItems'); const cur=sel.value;
+      sel.innerHTML = `<option value="All">All</option>` + [...set].sort((a,b)=>a.localeCompare(b)).map(c=>`<option>${c}</option>`).join('');
+      if([...sel.options].some(o=>o.value===cur)) sel.value=cur;
+    }
+
+    function renderItems(){
+      const q  = ($('#qItems').value||'').toLowerCase();
+      const cat= $('#catItems').value||'All';
+      const groups = new Map();
+      ITEMS.forEach(it=>{
+        if(cat!=='All' && it.category!==cat) return;
+        const ok = (it.name||'').toLowerCase().includes(q) || (it.category||'').toLowerCase().includes(q) || (it.notes||'').toLowerCase().includes(q);
+        if(!ok) return;
+        const g = it.category||'Other';
+        if(!groups.has(g)) groups.set(g, []);
+        groups.get(g).push(it);
+      });
+
+      const wrap = $('#itemsWrap'); wrap.innerHTML='';
+      [...groups.keys()].sort((a,b)=>a.localeCompare(b)).forEach(g=>{
+        const items = groups.get(g).sort((a,b)=>a.name.localeCompare(b.name));
+        const sec = document.createElement('div');
+        sec.innerHTML = `
+          <div class="flex items-center justify-between mb-2">
             <div class="flex items-center gap-2">
-              ${img}
-              <div class="font-semibold">${p.nickname?`${p.nickname} (${p.species})`: (p.species||'')}</div>
+              <img src="./4.png" class="h-4 w-4"> <!-- your little sprite -->
+              <h3 class="brand font-semibold">${g}</h3>
+              <span class="text-xs text-slate-500">${items.length} items</span>
             </div>
-            <div class="text-xs text-slate-500">${p.owner||''}</div>
           </div>
-          <div class="text-xs flex flex-wrap gap-2">
-            <span class="pill">$${Number(p.price||0).toFixed(0)}</span>
-            ${p.level? `<span class="pill">Lv ${p.level}</span>`:''}
-            ${p.nature? `<span class="pill">${p.nature}</span>`:''}
-            ${flags? `<span class="pill">${flags}</span>`:''}
-          </div>
-          <div class="text-xs text-slate-600 space-y-1">
-            ${p.tera? `<div>Tera: ${p.tera}</div>`:''}
-            ${p.ball? `<div>Ball: ${p.ball}</div>`:''}
-            ${p.held? `<div>Held: ${p.held}</div>`:''}
-            ${p.ability? `<div>Ability: ${p.ability}</div>`:''}
-            ${p.size? `<div>Size: ${p.size}</div>`:''}
-            ${ivs? `<div>IVs ${ivs}</div>`:''}
-            ${evs? `<div>EVs ${evs}</div>`:''}
-            ${p.moves? `<div>Moves: ${p.moves}</div>`:''}
-            ${p.notes? `<div>${p.notes}</div>`:''}
-          </div>`;
-        grid.appendChild(card);
-      }
-    }
-
-    // ---------- Items list
-    function renderAll(){
-      const q=($('#q').value||'').toLowerCase();
-      const catSel=$('#cat').value||'All';
-      const cats=new Map();
-
-      for(const it of items){
-        if(catSel!=='All' && it.category!==catSel) continue;
-        const hay=[it.name||'', it.category||'', it.notes||''].join(' ').toLowerCase();
-        if(q && !hay.includes(q)) continue;
-        const key=it.category||'Other';
-        if(!cats.has(key)) cats.set(key,[]);
-        cats.get(key).push(it);
-      }
-
-      // category select
-      const sel=$('#cat'); const seen=new Set(['All']);
-      for(const it of items){ if(it.category) seen.add(it.category); }
-      const cur=sel.value; sel.innerHTML=''; for(const k of [...seen]) sel.add(new Option(k,k)); sel.value = [...seen].includes(cur)?cur:'All';
-
-      // draw sections
-      const wrap=$('#itemsWrap'); wrap.innerHTML='';
-      for(const [cat,list] of cats){
-        list.sort((a,b)=> (a.name||'').localeCompare(b.name||''));
-        const sec=document.createElement('section'); sec.className='space-y-2';
-        sec.innerHTML=`
-          <div class="flex items-center gap-2">
-            ${iconFor(cat)}
-            <h3 class="brand text-lg">${cat}</h3>
-            <span class="text-[11px] text-slate-500 ml-2">${list.length} item${list.length===1?'':'s'}</span>
-          </div>
-          <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-3"></div>`;
-        const grid=sec.querySelector('div.grid');
-
-        for(const it of list){
-          const sell = Math.round(Number(it.sellPrice ?? it.price ?? 0));
-          const buy  = Math.round(sell * buyRate);
-          const stockBadge = (it.stock!=='' && it.stock!=null) ? `<span class="chip">Stock <b>${it.stock}</b></span>` : '';
-          const el=document.createElement('div');
-          el.className='card p-3 flex flex-col gap-2 hover:shadow-soft transition-shadow';
-          el.innerHTML=`
-            <div class="font-medium">${it.name||''}</div>
-            <div class="flex items-center gap-2 text-xs flex-wrap">
-              <span class="chip">Our Price <b>$${sell}</b></span>
-              <span class="chip">We Buy <b>$${buy}</b></span>
-              ${stockBadge}
-            </div>`;
-          grid.appendChild(el);
-        }
+          <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-2"></div>
+        `;
+        const grid = sec.querySelector('div.grid');
+        items.forEach(it=>{
+          const div=document.createElement('div');
+          div.className='p-3 rounded-xl border bg-white';
+          const buy = Number(it.buyPrice ?? Math.round(Number(it.sellPrice||0)*BUY_RATE));
+          div.innerHTML = `
+            <div class="font-semibold">${it.name}</div>
+            <div class="text-xs text-slate-600">${it.category||''}</div>
+            <div class="mt-2 flex items-center gap-2 text-xs">
+              <span class="chip">Our Price ${asMoney(it.sellPrice)}</span>
+              <span class="chip">We Buy For ${asMoney(buy)}</span>
+            </div>
+          `;
+          grid.appendChild(div);
+        });
         wrap.appendChild(sec);
-      }
+      });
     }
 
-    // ---------- Requests (enabled)
-    const reqDialog = $('#reqDialog');
-    const reqForm   = $('#reqForm');
-    const reqStatus = $('#reqStatus');
-    const reqType   = $('#reqType');
-    const sellBuilder = $('#sellBuilder');
-    const sellList = $('#sellList');
-    const sellTotalEl = $('#sellTotal');
-    const sellSearch = $('#sellSearch');
-    const sellCat = $('#sellCat');
+    /*************************
+     * Requests – UI wiring  *
+     *************************/
+    const dlg = $('#dlgReq');
+    $('#btnRequests').addEventListener('click', ()=>{
+      if(!dlg.open) dlg.showModal();
+    });
 
-    let sellSelected = {}; // id -> {name, qty, buyPrice}
-
-    function refreshSellBuilder(){
-      const set = new Set(items.map(i=>i.category).filter(Boolean));
-      const cur = sellCat.value || 'All';
-      sellCat.innerHTML = '<option value="All">All categories</option>' + [...set].sort().map(c=>`<option>${c}</option>`).join('');
-      sellCat.value = [...set].includes(cur) ? cur : 'All';
-      drawSellChoices();
-      computeSellTotal();
+    // Build request picker from ITEMS
+    function renderReqPicker(){
+      // fill category filter
+      const set = new Set(ITEMS.map(i=>i.category).filter(Boolean));
+      const sel = $('#rqCat'); sel.innerHTML = `<option value="All">All categories</option>` + [...set].sort((a,b)=>a.localeCompare(b)).map(c=>`<option>${c}</option>`).join('');
+      // render list
+      doRenderReqItems();
     }
 
-    function drawSellChoices(){
-      const q = (sellSearch.value||'').toLowerCase();
-      const cat = sellCat.value||'All';
-      sellList.innerHTML='';
-      const data = items.filter(it =>
-        (cat==='All'||it.category===cat) &&
-        ((it.name||'').toLowerCase().includes(q) || (it.category||'').toLowerCase().includes(q))
-      ).sort((a,b)=> (a.category||'').localeCompare(b.category||'') || (a.name||'').localeCompare(b.name||''));
-      for(const it of data){
-        const sell = Math.round(Number(it.sellPrice ?? it.price ?? 0));
-        const buy  = Math.round(sell * buyRate);
-        const qty = sellSelected[it.id]?.qty || 0;
+    function doRenderReqItems(){
+      const q  = ($('#rqSearch').value||'').toLowerCase();
+      const cat= $('#rqCat').value||'All';
+      const host = $('#rqItems'); host.innerHTML='';
+      const list = ITEMS.filter(it => (cat==='All'||it.category===cat) && ((it.name||'').toLowerCase().includes(q) || (it.category||'').toLowerCase().includes(q))).slice(0,90);
+      list.forEach(it=>{
+        const buy = Number(it.buyPrice ?? Math.round(Number(it.sellPrice||0)*BUY_RATE));
+        const id  = it.id;
         const row = document.createElement('div');
-        row.className='flex items-center justify-between gap-2 border rounded-lg px-2 py-1';
+        row.className = 'p-2 rounded-lg border bg-white flex items-center justify-between gap-2';
         row.innerHTML = `
-          <div class="min-w-0 flex-1">
-            <div class="truncate"><span class="font-medium">${it.name}</span> <span class="text-[11px] text-slate-500">(${it.category||'Other'})</span></div>
-            <div class="text-[11px] text-slate-500">Our buy: $${buy}</div>
+          <div>
+            <div class="font-medium">${it.name}</div>
+            <div class="text-[11px] text-slate-500">${it.category||''} • Our buy: ${asMoney(buy)}</div>
           </div>
           <div class="flex items-center gap-1">
-            <button class="btn" data-act="qty-" data-id="${it.id}">−</button>
-            <input class="rounded-xl border px-2 py-1 w-16 text-center" type="number" min="0" value="${qty}" data-id="${it.id}" data-field="qty">
-            <button class="btn" data-act="qty+" data-id="${it.id}">+</button>
-          </div>`;
-        sellList.appendChild(row);
-      }
+            <button class="px-2 py-1 border rounded-lg" data-dec="${id}">−</button>
+            <input class="w-12 text-center border rounded-lg p-1" value="0" data-qty="${id}">
+            <button class="px-2 py-1 border rounded-lg" data-inc="${id}">+</button>
+          </div>
+        `;
+        host.appendChild(row);
+      });
+      updateSelectedSummary();
     }
 
-    function computeSellTotal(){
+    function updateSelectedSummary(){
+      const qInputs = $$('#rqItems [data-qty]');
+      const lines = [];
       let total = 0;
-      for(const id in sellSelected){
-        const entry = sellSelected[id];
-        total += (entry.qty||0) * (entry.buyPrice||0);
-      }
-      sellTotalEl.textContent = String(Math.round(total));
+      qInputs.forEach(inp=>{
+        const id = inp.getAttribute('data-qty');
+        const qty = Math.max(0, Number(inp.value||0));
+        if(!qty) return;
+        const it = ITEMS.find(x=>x.id===id);
+        if(!it) return;
+        const unit = Number(it.buyPrice ?? Math.round(Number(it.sellPrice||0)*BUY_RATE));
+        const line = unit * qty;
+        total += line;
+        lines.push({ id: it.id, name: it.name, qty, unit, line });
+      });
+      // show
+      $('#rqSelected').innerHTML = lines.length
+        ? lines.map(l=>`${l.name} × ${l.qty} @ ${asMoney(l.unit)} = <b>${asMoney(l.line)}</b>`).join('<br>')
+        : `<span class="text-slate-400">No items selected…</span>`;
+      $('#rqTotal').textContent = asMoney(total);
+      // stash for send
+      $('#rqSelected').dataset.payload = JSON.stringify({ lines, total });
     }
 
-    reqType.addEventListener('change', ()=>{
-      const selling = reqType.value === 'selling-items';
-      sellBuilder.classList.toggle('hidden', !selling);
-      if(selling) { refreshSellBuilder(); }
-    });
-    sellSearch.addEventListener('input', drawSellChoices);
-    sellCat.addEventListener('change', drawSellChoices);
-
+    // qty step buttons
     document.addEventListener('click', (e)=>{
-      const t=e.target;
-      // seller qty controls
-      if(t.dataset.act==='qty+' || t.dataset.act==='qty-'){
-        const id=t.dataset.id;
-        const it = items.find(x=>x.id===id);
-        if(!it) return;
-        const sell = Math.round(Number(it.sellPrice ?? it.price ?? 0));
-        const buy  = Math.round(sell * buyRate);
-        const cur = sellSelected[id]?.qty || 0;
-        const next = Math.max(0, cur + (t.dataset.act==='qty+'? 1 : -1));
-        if(next>0){
-          sellSelected[id] = { name: it.name, buyPrice: buy, qty: next };
-        } else {
-          delete sellSelected[id];
-        }
-        drawSellChoices();
-        computeSellTotal();
+      const inc = e.target.getAttribute('data-inc');
+      const dec = e.target.getAttribute('data-dec');
+      if(inc || dec){
+        const id = inc || dec;
+        const box = document.querySelector(`[data-qty="${id}"]`);
+        let v = Math.max(0, Number(box.value||0));
+        v += inc ? 1 : (v>0?-1:0);
+        box.value = v;
+        updateSelectedSummary();
       }
-
-      // menus
-      if(t.id==='pkMenu'){ $('#pkDropdown').classList.toggle('hidden'); }
-      if(t.id==='dlMenuBtn'){ $('#dlMenu').classList.toggle('hidden'); }
-      if(!t.closest('#dlMenu') && t.id!=='dlMenuBtn'){ $('#dlMenu')?.classList.add('hidden'); }
-      if(!t.closest('#pkDropdown') && t.id!=='pkMenu'){ $('#pkDropdown')?.classList.add('hidden'); }
+    });
+    document.addEventListener('input', (e)=>{
+      if(e.target.matches('#rqItems [data-qty]')) updateSelectedSummary();
+      if(e.target.matches('#rqSearch') || e.target.matches('#rqCat')) doRenderReqItems();
+      if(e.target.matches('#qPk')) renderPokemon();
+      if(e.target.matches('#qItems')) renderItems();
+      if(e.target.matches('#catItems')) renderItems();
     });
 
-    document.getElementById('reqSubmit').addEventListener('click', async (e)=>{
+    // SEND
+    $('#rqSend').addEventListener('click', async (e)=>{
       e.preventDefault();
-      if(!db){ reqStatus.textContent='Please open Admin and Save config first.'; return; }
-      const ign = $('#reqIGN').value.trim();
-      const discord = $('#reqDiscord').value.trim();
-      const type = $('#reqType').value;
-      const subject = $('#reqSubject').value.trim();
-      const body = $('#reqBody').value.trim();
-      if(!ign || !discord){ reqStatus.textContent='IGN and Discord are required.'; return; }
-
-      let selling = null;
-      if(type==='selling-items'){
-        selling = Object.entries(sellSelected).map(([id,ent])=>({
-          id, name: ent.name, qty: ent.qty, unitBuy: ent.buyPrice, lineTotal: ent.qty*ent.buyPrice
-        }));
-      }
-
+      const ign = $('#rqIGN').value.trim();
+      const discord = $('#rqDisc').value.trim();
+      const type = $('#rqType').value;
+      const subject = $('#rqSubject').value.trim();
+      const message = $('#rqMsg').value.trim();
+      const { lines=[], total=0 } = JSON.parse($('#rqSelected').dataset.payload || '{"lines":[],"total":0}');
+      const payload = {
+        ts: Date.now(),
+        status: 'open',
+        ign, discord, type, subject,
+        message,
+        items: lines,       // [{id,name,qty,unit,line}]
+        total
+      };
       try{
-        const id='r-'+Date.now();
-        await db.ref(`/shops/${shopId}/requests/${id}`).set({
-          id, type, ign, discord, subject, body,
-          selling: selling,
-          total: selling ? selling.reduce((a,c)=>a+c.lineTotal,0) : null,
-          ts: Date.now()
-        });
-        reqStatus.textContent='Sent ✓ We will reach out on Discord.';
-        setTimeout(()=> reqDialog.close(), 600);
-        // reset builder
-        sellSelected = {}; drawSellChoices(); computeSellTotal();
-        reqForm.reset();
+        await refReq.push(payload);
+        // reset a few fields
+        $('#rqMsg').value='';
+        $$('[data-qty]').forEach(x=>x.value=0);
+        updateSelectedSummary();
+        dlg.close();
+        alert('Request sent — we will reach out on Discord!');
       }catch(err){
         console.error(err);
-        reqStatus.textContent='Failed to send. Try again.';
+        alert('Failed to send request.');
       }
     });
 
-    // ---------- CSV export (password 44312)
-    const EXPORT_PASS="44312";
-    function requireExportAuth(){
-      if(sessionStorage.getItem("jjb_exports_ok")==="1") return true;
-      const entered = prompt("Enter download password");
-      if(entered===EXPORT_PASS){ sessionStorage.setItem("jjb_exports_ok","1"); return true; }
-      alert("Wrong password."); return false;
-    }
-    function csvEscape(val){ if(val==null) return ''; const s=String(val); return /[\",\n]/.test(s) ? `"${s.replace(/"/g,'""')}"` : s; }
-    function downloadCsv(filename, rows){
-      const csv = rows.map(r=>r.map(csvEscape).join(',')).join('\n');
-      const blob = new Blob([csv], {type:'text/csv;charset=utf-8;'});
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a'); a.href=url; a.download=filename; document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
-    }
-    function buildItemsCsvRows(){
-      const header=['Name','Category','Sell Price','Buy Price','Stock','Notes','ID','UpdatedAt'];
-      const rows=[header];
-      for(const it of (items||[])){
-        const sell = Math.round(Number(it.sellPrice ?? it.price ?? 0));
-        const buy  = Math.round(sell * buyRate);
-        rows.push([
-          it.name ?? '',
-          it.category ?? '',
-          sell,
-          buy,
-          (it.stock===''||it.stock==null)?'':Number(it.stock),
-          it.notes ?? '',
-          it.id ?? '',
-          it._ts ? new Date(it._ts).toISOString() : ''
-        ]);
-      }
-      return rows;
-    }
-    function buildPkCsvRows(){
-      const header=['Owner','Species','Nickname','Level','Nature','Price','Shiny','Neutered','Tera','Ball','Held','Ability','Size','IVs','EVs','Moves','Notes','ID','UpdatedAt','Image'];
-      const rows=[header];
-      for(const p of (pokemon||[])){
-        const ivs = p.ivs ? `${p.ivs.hp||0}/${p.ivs.atk||0}/${p.ivs.def||0}/${p.ivs.spa||0}/${p.ivs.spd||0}/${p.ivs.spe||0}` : '';
-        const evs = p.evs ? `${p.evs.hp||0}/${p.evs.atk||0}/${p.evs.def||0}/${p.evs.spa||0}/${p.evs.spd||0}/${p.evs.spe||0}` : '';
-        rows.push([
-          p.owner ?? '',
-          p.species ?? '',
-          p.nickname ?? '',
-          p.level ?? '',
-          p.nature ?? '',
-          Math.round(Number(p.price||0)),
-          p.shiny ? 'Yes':'No',
-          p.neutered ? 'Yes':'No',
-          p.tera ?? '',
-          p.ball ?? '',
-          p.held ?? '',
-          p.ability ?? '',
-          p.size ?? '',
-          ivs,
-          evs,
-          p.moves ?? '',
-          p.notes ?? '',
-          p.id ?? '',
-          p._ts ? new Date(p._ts).toISOString() : '',
-          p.image ?? ''
-        ]);
-      }
-      return rows;
-    }
-    document.getElementById('exportItems')?.addEventListener('click', ()=>{
-      if(!requireExportAuth()) return;
-      if(!items || !items.length){ alert('No items loaded yet.'); return; }
-      downloadCsv('jjblossoms_items.csv', buildItemsCsvRows());
-    });
-    document.getElementById('exportPk')?.addEventListener('click', ()=>{
-      if(!requireExportAuth()) return;
-      if(!pokemon || !pokemon.length){ alert('No Pokémon loaded yet.'); return; }
-      downloadCsv('jjblossoms_pokemon.csv', buildPkCsvRows());
+    /*************************
+     * Download CSV (password)
+     *************************/
+    $('#btnDownload').addEventListener('click', async ()=>{
+      const pw = prompt('Enter password to export CSV:');
+      if(pw !== '44312') return alert('Wrong password.');
+      const snap = await refItems.get(); const obj = snap.val()||{};
+      const rows = [['name','category','sell_price','buy_price','stock','notes']];
+      Object.values(obj).forEach(it=>{
+        rows.push([it.name||'', it.category||'', it.sellPrice||0, (it.buyPrice??Math.round((it.sellPrice||0)*BUY_RATE)), it.stock===''?'':it.stock, it.notes||'']);
+      });
+      const csv = rows.map(r => r.map(v=>{
+        v = (v===null||v===undefined)?'':String(v);
+        return /[,"\n]/.test(v) ? `"${v.replace(/"/g,'""')}"` : v;
+      }).join(',')).join('\n');
+
+      const blob = new Blob([csv], {type:'text/csv'});
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = 'shop.csv';
+      a.click();
+      URL.revokeObjectURL(a.href);
     });
 
-    // ---------- Top menus & basic UI
-    document.getElementById('pkDropdown')?.addEventListener('click',(e)=>{
-      if(e.target.matches('[data-owner]')){
-        document.getElementById('pkDropdown').classList.add('hidden');
-        document.getElementById('pkOwnerFilter').value=e.target.getAttribute('data-owner');
-        location.hash='#pokemon'; renderPokemon();
-      }
-    });
-    document.getElementById('pkMenu').addEventListener('click',()=> document.getElementById('pkDropdown').classList.toggle('hidden'));
-    document.getElementById('dlMenuBtn').addEventListener('click',()=> document.getElementById('dlMenu').classList.toggle('hidden'));
-    document.getElementById('reloadBtn').addEventListener('click',()=> location.reload());
-    document.getElementById('reset').addEventListener('click',()=>{ $('#q').value=''; $('#cat').value='All'; renderAll(); });
-    $('#q').addEventListener('input', renderAll); $('#cat').addEventListener('change', renderAll);
-    $('#pkOwnerFilter').addEventListener('change', renderPokemon); $('#qPk').addEventListener('input', renderPokemon);
-    $('#reqBtn').addEventListener('click',()=> reqDialog.showModal());
+    // Admin button
+    $('#btnAdmin').addEventListener('click', ()=> location.href='admin.html');
 
-    // Connect to live data
-    connect();
+    /*************************
+     * Live data listeners   *
+     *************************/
+    refItems.on('value', snap=>{
+      const v = snap.val() || {};
+      ITEMS = Object.values(v).sort((a,b)=> (a.category||'').localeCompare(b.category||'') || (a.name||'').localeCompare(b.name||''));
+      fillItemCats(); renderItems(); renderReqPicker();
+    });
+    refPk.on('value', snap=>{
+      const v = snap.val() || {};
+      POKES = Object.values(v);
+      renderPokemon();
+    });
+
+    // open requests dialog renders picker first time
+    $('#btnRequests').addEventListener('click', renderReqPicker);
   </script>
 </body>
 </html>
