@@ -1,215 +1,230 @@
 <!doctype html>
 <html lang="en">
 <head>
-  <meta charset="utf-8"/>
-  <meta name="viewport" content="width=device-width, initial-scale=1"/>
-  <title>🌸 JJBlossoms — Admin (LIVE)</title>
-  <meta name="theme-color" content="#0f172a"/>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>🌸 JJBlossoms — Admin (LIVE)</title>
+<meta name="theme-color" content="#0f172a"/>
 
-  <!-- UI -->
-  <script src="https://cdn.tailwindcss.com"></script>
-  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;700;900&family=Cinzel:wght@700&display=swap" rel="stylesheet">
-  <style>
-    .brand{ font-family:'Cinzel','Noto Sans JP',system-ui,Segoe UI,Roboto,Helvetica,Arial }
-    .input{ width:100%; padding:.5rem .75rem; border-radius:.75rem; border:1px solid #cbd5e1 }
-    .btn{ display:inline-flex; align-items:center; gap:.5rem; padding:.45rem .9rem; border-radius:.75rem; border:1px solid #cbd5e1; background:#fff }
-    .btn-primary{ background:#0f172a; color:#fff; border-color:#0f172a }
-    .card{ border:1px solid #e2e8f0; border-radius:1rem; background:#fff }
-    table input{ min-width:5rem }
-    .thumb{ width:56px; height:56px; object-fit:cover; border-radius:.5rem; border:1px solid #e5e7eb }
-  </style>
+<!-- UI -->
+<script src="https://cdn.tailwindcss.com"></script>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;700;900&family=Cinzel:wght@700&display=swap" rel="stylesheet">
+<style>
+  .brand{ font-family:'Cinzel','Noto Sans JP',system-ui,Segoe UI,Roboto,Helvetica,Arial }
+  .input{ width:100%; padding:.5rem .75rem; border-radius:.75rem; border:1px solid #cbd5e1 }
+  .btn{ display:inline-flex; align-items:center; gap:.5rem; padding:.45rem .9rem; border-radius:.75rem; border:1px solid #cbd5e1; background:#fff }
+  .btn-primary{ background:#0f172a; color:#fff; border-color:#0f172a }
+  .card{ border:1px solid #e2e8f0; border-radius:1rem; background:#fff }
+  table input{ min-width:5rem }
+  .thumb{ width:56px; height:56px; object-fit:cover; border-radius:.5rem; border:1px solid #e5e7eb }
+</style>
 
-  <!-- Firebase (compat) -->
-  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-storage-compat.js"></script>
+<!-- Firebase (compat) -->
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-storage-compat.js"></script>
 
-  <!-- CSV helper -->
-  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<!-- CSV helper -->
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 </head>
 <body class="bg-slate-50">
-  <div class="max-w-7xl mx-auto p-4 sm:p-6 space-y-4">
-    <!-- Header / Config -->
-    <header class="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3">
-      <div>
-        <h1 class="brand text-2xl sm:text-3xl font-bold">🌸 JJBlossoms — Admin (LIVE)</h1>
-        <p class="text-slate-600 text-sm">Configure once below. Anonymous sign-in; all edits sync to Firebase under your Shop ID.</p>
-      </div>
-      <div class="flex items-center gap-2">
-        <a href="./index.html" class="btn">🏠 Back to site</a>
-        <button id="saveCfg" class="btn">💾 Save config</button>
-        <button id="reload" class="btn">🔄 Reload</button>
-        <button id="signOut" class="btn">🚪 Sign out</button>
-      </div>
-    </header>
+<div class="max-w-7xl mx-auto p-4 sm:p-6 space-y-4">
+  <!-- Header / Config -->
+  <header class="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3">
+    <div>
+      <h1 class="brand text-2xl sm:text-3xl font-bold">🌸 JJBlossoms — Admin (LIVE)</h1>
+      <p class="text-slate-600 text-sm">Configure once below. Anonymous sign-in; edits sync to Firebase under your Shop ID.</p>
+    </div>
+    <div class="flex items-center gap-2">
+      <a href="./index.html" class="btn">🏠 Back to site</a>
+      <button id="saveCfg" class="btn">💾 Save config</button>
+      <button id="reload" class="btn">🔄 Reload</button>
+      <button id="signOut" class="btn">🚪 Sign out</button>
+    </div>
+  </header>
 
-    <section class="card p-4 space-y-3">
-      <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
-        <input id="shopId" class="input" placeholder="Shop ID" value="jjblossoms">
-        <input id="cfgJson" class="input md:col-span-2" placeholder='Paste Firebase config JSON here'>
-      </div>
-      <div class="text-xs text-slate-500">
-        Firebase Console → Project settings → <b>General</b> → Your apps → Web → copy the config object.
-        Enable <b>Authentication → Anonymous</b>, <b>Realtime Database</b>, and <b>Storage</b>.
-      </div>
-      <div class="flex items-center gap-2 text-sm">
-        <div>Status:</div><div id="status" class="font-semibold text-slate-700">Not connected</div>
-      </div>
-
-      <div class="flex items-center flex-wrap gap-2">
-        <button id="importCsv" class="btn">📥 Import items from <b>shop.csv</b></button>
-
-        <div class="flex items-center gap-2">
-          <label class="text-sm text-slate-600">Buy %</label>
-          <input id="buyPct" type="number" min="1" max="100" value="85" class="input w-24" />
-          <button id="recalc" class="btn">🧮 Recalculate buy prices</button>
-        </div>
-
-        <button id="dlItemsCsv" class="btn">⬇️ Download items CSV</button>
-        <button id="dlPkCsv" class="btn">⬇️ Download Pokémon CSV</button>
-        <button id="dlReqCsv" class="btn">⬇️ Download requests CSV</button>
-        <button id="clearAll" class="btn">🧹 Clear ALL items</button>
-      </div>
-    </section>
-
-    <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
-      <!-- Items -->
-      <section class="card p-4 space-y-3">
-        <div class="flex items-center justify-between">
-          <h2 class="brand text-xl">Items</h2>
-          <div class="flex items-center gap-2">
-            <input id="qItems" class="input" placeholder="Search items">
-            <select id="catItems" class="input"></select>
-          </div>
-        </div>
-
-        <form id="addItemForm" class="grid grid-cols-2 gap-3">
-          <input class="input" id="itemName" placeholder="Item name" required>
-          <input class="input" id="itemCat" placeholder="Category" required>
-          <input class="input" id="itemPrice" type="number" placeholder="Sell price ($)" required>
-          <input class="input" id="itemStock" type="number" placeholder="Stock (optional)">
-          <input class="input col-span-2" id="itemNotes" placeholder="Notes (optional)">
-          <button class="btn btn-primary col-span-2" type="submit">➕ Add / Update Item</button>
-        </form>
-
-        <div class="overflow-auto rounded-2xl border">
-          <table class="min-w-full text-sm">
-            <thead class="bg-slate-50 sticky top-0">
-              <tr class="text-left">
-                <th class="p-3">Name</th><th class="p-3">Category</th>
-                <th class="p-3">Sell</th><th class="p-3">Buy</th>
-                <th class="p-3">Stock</th><th class="p-3">Notes</th><th class="p-3">Actions</th>
-              </tr>
-            </thead>
-            <tbody id="rowsItems"></tbody>
-          </table>
-        </div>
-      </section>
-
-      <!-- Pokémon -->
-      <section class="card p-4 space-y-3">
-        <div class="flex items-center justify-between">
-          <h2 class="brand text-xl">Pokémon For Sale</h2>
-          <div class="flex items-center gap-2">
-            <select id="pkOwnerFilter" class="input"><option>All</option><option>Yerttty</option><option>Jonfiin</option></select>
-            <input id="qPk" class="input" placeholder="Search Pokémon">
-          </div>
-        </div>
-
-        <form id="addPkForm" class="grid grid-cols-2 gap-3">
-          <select class="input" id="pkOwner" required><option>Yerttty</option><option>Jonfiin</option></select>
-          <input class="input" id="pkNickname" placeholder="Nickname (optional)">
-          <input class="input" id="pkSpecies" placeholder="Species" required>
-          <input class="input" id="pkLevel" type="number" min="1" placeholder="Level" required>
-          <input class="input" id="pkNature" placeholder="Nature">
-          <input class="input" id="pkPrice" type="number" min="0" placeholder="Price ($)" required>
-          <input class="input" id="pkTera" placeholder="Tera Type (optional)">
-          <input class="input" id="pkBall" placeholder="Caught Ball (optional)">
-          <input class="input" id="pkHeld" placeholder="Held Item (optional)">
-          <input class="input" id="pkAbility" placeholder="Ability (optional)">
-          <input class="input" id="pkSize" placeholder="Size (optional)">
-          <label class="flex items-center gap-2 text-sm"><input id="pkShiny" type="checkbox"> Shiny</label>
-          <label class="flex items-center gap-2 text-sm"><input id="pkNeutered" type="checkbox"> Neutered</label>
-
-          <!-- IVs / EVs -->
-          <div class="col-span-2 grid grid-cols-6 gap-2">
-            <div class="text-xs col-span-6 font-semibold">IVs (0–31)</div>
-            <input class="input" id="ivHP" type="number" min="0" max="31" placeholder="HP">
-            <input class="input" id="ivATK" type="number" min="0" max="31" placeholder="ATK">
-            <input class="input" id="ivDEF" type="number" min="0" max="31" placeholder="DEF">
-            <input class="input" id="ivSPA" type="number" min="0" max="31" placeholder="SP.ATK">
-            <input class="input" id="ivSPD" type="number" min="0" max="31" placeholder="SP.DEF">
-            <input class="input" id="ivSPE" type="number" min="0" max="31" placeholder="SPE">
-          </div>
-          <div class="col-span-2 grid grid-cols-6 gap-2">
-            <div class="text-xs col-span-6 font-semibold">EVs (0–252 each, optional)</div>
-            <input class="input" id="evHP"  type="number" min="0" max="252" placeholder="HP">
-            <input class="input" id="evATK" type="number" min="0" max="252" placeholder="ATK">
-            <input class="input" id="evDEF" type="number" min="0" max="252" placeholder="DEF">
-            <input class="input" id="evSPA" type="number" min="0" max="252" placeholder="SP.ATK">
-            <input class="input" id="evSPD" type="number" min="0" max="252" placeholder="SP.DEF">
-            <input class="input" id="evSPE" type="number" min="0" max="252" placeholder="SPE">
-          </div>
-
-          <input class="input col-span-2" id="pkMoves" placeholder="Moves (comma-separated)">
-          <textarea class="input col-span-2" id="pkNotes" placeholder="Extra notes (optional)"></textarea>
-
-          <!-- Image upload -->
-          <div class="col-span-2 flex items-center gap-3">
-            <input id="pkImg" type="file" accept="image/*" class="input">
-            <img id="pkPreview" class="thumb hidden" alt="preview">
-          </div>
-
-          <button class="btn btn-primary col-span-2" type="submit">➕ Add / Update Pokémon</button>
-        </form>
-
-        <div class="overflow-auto rounded-2xl border">
-          <table class="min-w-full text-sm">
-            <thead class="bg-slate-50 sticky top-0">
-              <tr class="text-left">
-                <th class="p-3">Owner</th><th class="p-3">Image</th><th class="p-3">Species</th><th class="p-3">Lv.</th>
-                <th class="p-3">Nature</th><th class="p-3">Price</th><th class="p-3">Notes</th><th class="p-3">Actions</th>
-              </tr>
-            </thead>
-            <tbody id="rowsPk"></tbody>
-          </table>
-        </div>
-      </section>
+  <section class="card p-4 space-y-3">
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+      <input id="shopId" class="input" placeholder="Shop ID" value="jjblossoms">
+      <input id="cfgJson" class="input md:col-span-2" placeholder='Paste Firebase config JSON here'>
+    </div>
+    <div class="text-xs text-slate-500">
+      Firebase Console → Project settings → <b>General</b> → Your apps → Web → copy the config object.
+      Enable <b>Authentication → Anonymous</b>, <b>Realtime Database</b>, and <b>Storage</b>.
+    </div>
+    <div class="flex items-center gap-2 text-sm">
+      <div>Status:</div><div id="status" class="font-semibold text-slate-700">Not connected</div>
     </div>
 
-    <!-- Requests -->
+    <div class="flex items-center flex-wrap gap-2">
+      <button id="importCsv" class="btn">📥 Import items from <b>shop.csv</b></button>
+
+      <div class="flex items-center gap-2">
+        <label class="text-sm text-slate-600">Buy %</label>
+        <input id="buyPct" type="number" min="1" max="100" value="85" class="input w-24" />
+        <button id="recalc" class="btn">🧮 Recalculate buy prices</button>
+      </div>
+
+      <button id="dlItemsCsv" class="btn">⬇️ Download items CSV</button>
+      <button id="dlPkCsv" class="btn">⬇️ Download Pokémon CSV</button>
+      <button id="dlReqCsv" class="btn">⬇️ Download requests CSV</button>
+      <button id="clearAll" class="btn">🧹 Clear ALL items</button>
+    </div>
+  </section>
+
+  <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+    <!-- Items -->
     <section class="card p-4 space-y-3">
       <div class="flex items-center justify-between">
-        <h2 class="brand text-xl">Requests (from site)</h2>
+        <h2 class="brand text-xl">Items</h2>
         <div class="flex items-center gap-2">
-          <input id="qReq" class="input" placeholder="Search IGN/Discord/type">
-          <select id="reqFilter" class="input">
-            <option value="All">All</option>
-            <option value="price">Price</option>
-            <option value="new">New Item</option>
-            <option value="sell">Sell Items</option>
-            <option value="other">Other</option>
-            <option value="open">Open only</option>
-            <option value="closed">Closed only</option>
-          </select>
+          <input id="qItems" class="input" placeholder="Search items">
+          <select id="catItems" class="input"></select>
         </div>
       </div>
+
+      <form id="addItemForm" class="grid grid-cols-2 gap-3">
+        <input class="input" id="itemName" placeholder="Item name" required>
+        <input class="input" id="itemCat" placeholder="Category" required>
+        <input class="input" id="itemPrice" type="number" placeholder="Sell price ($)" required>
+        <input class="input" id="itemStock" type="number" placeholder="Stock (optional)">
+        <input class="input col-span-2" id="itemNotes" placeholder="Notes (optional)">
+        <button class="btn btn-primary col-span-2" type="submit">➕ Add / Update Item</button>
+      </form>
+
       <div class="overflow-auto rounded-2xl border">
         <table class="min-w-full text-sm">
           <thead class="bg-slate-50 sticky top-0">
             <tr class="text-left">
-              <th class="p-3">When</th><th class="p-3">IGN</th><th class="p-3">Discord</th><th class="p-3">Type</th>
-              <th class="p-3">Items / Details</th><th class="p-3">Total</th><th class="p-3">Status</th><th class="p-3">Actions</th>
+              <th class="p-3">Name</th><th class="p-3">Category</th>
+              <th class="p-3">Sell</th><th class="p-3">Buy</th>
+              <th class="p-3">Stock</th><th class="p-3">Notes</th><th class="p-3">Actions</th>
             </tr>
           </thead>
-          <tbody id="rowsReq"></tbody>
+          <tbody id="rowsItems"></tbody>
         </table>
       </div>
     </section>
 
-    <p class="text-xs text-slate-500">Edits save instantly. Export CSV any time for a backup (`shop.csv`).</p>
+    <!-- Pokémon -->
+    <section class="card p-4 space-y-3">
+      <div class="flex items-center justify-between">
+        <h2 class="brand text-xl">Pokémon For Sale</h2>
+        <div class="flex items-center gap-2">
+          <select id="pkOwnerFilter" class="input"><option>All</option><option>Yerttty</option><option>Jonfiin</option></select>
+          <input id="qPk" class="input" placeholder="Search Pokémon">
+        </div>
+      </div>
+
+      <form id="addPkForm" class="grid grid-cols-2 gap-3">
+        <select class="input" id="pkOwner" required><option>Yerttty</option><option>Jonfiin</option></select>
+        <input class="input" id="pkNickname" placeholder="Nickname (optional)">
+        <input class="input" id="pkSpecies" placeholder="Species" required>
+        <input class="input" id="pkLevel" type="number" min="1" placeholder="Level" required>
+        <input class="input" id="pkNature" placeholder="Nature">
+        <input class="input" id="pkPrice" type="number" min="0" placeholder="Price ($)" required>
+        <input class="input" id="pkTera" placeholder="Tera Type (optional)">
+        <input class="input" id="pkBall" placeholder="Caught Ball (optional)">
+        <input class="input" id="pkHeld" placeholder="Held Item (optional)">
+        <input class="input" id="pkAbility" placeholder="Ability (optional)">
+        <input class="input" id="pkSize" placeholder="Size (optional)">
+        <label class="flex items-center gap-2 text-sm"><input id="pkShiny" type="checkbox"> Shiny</label>
+        <label class="flex items-center gap-2 text-sm"><input id="pkNeutered" type="checkbox"> Neutered</label>
+
+        <!-- IVs / EVs -->
+        <div class="col-span-2 grid grid-cols-6 gap-2">
+          <div class="text-xs col-span-6 font-semibold">IVs (0–31)</div>
+          <input class="input" id="ivHP" type="number" min="0" max="31" placeholder="HP">
+          <input class="input" id="ivATK" type="number" min="0" max="31" placeholder="ATK">
+          <input class="input" id="ivDEF" type="number" min="0" max="31" placeholder="DEF">
+          <input class="input" id="ivSPA" type="number" min="0" max="31" placeholder="SP.ATK">
+          <input class="input" id="ivSPD" type="number" min="0" max="31" placeholder="SP.DEF">
+          <input class="input" id="ivSPE" type="number" min="0" max="31" placeholder="SPE">
+        </div>
+        <div class="col-span-2 grid grid-cols-6 gap-2">
+          <div class="text-xs col-span-6 font-semibold">EVs (0–252 each, optional)</div>
+          <input class="input" id="evHP"  type="number" min="0" max="252" placeholder="HP">
+          <input class="input" id="evATK" type="number" min="0" max="252" placeholder="ATK">
+          <input class="input" id="evDEF" type="number" min="0" max="252" placeholder="DEF">
+          <input class="input" id="evSPA" type="number" min="0" max="252" placeholder="SP.ATK">
+          <input class="input" id="evSPD" type="number" min="0" max="252" placeholder="SP.DEF">
+          <input class="input" id="evSPE" type="number" min="0" max="252" placeholder="SPE">
+        </div>
+
+        <input class="input col-span-2" id="pkMoves" placeholder="Moves (comma-separated)">
+        <textarea class="input col-span-2" id="pkNotes" placeholder="Extra notes (optional)"></textarea>
+
+        <!-- Image upload -->
+        <div class="col-span-2 flex items-center gap-3">
+          <input id="pkImg" type="file" accept="image/*" class="input">
+          <img id="pkPreview" class="thumb hidden" alt="preview">
+        </div>
+
+        <button class="btn btn-primary col-span-2" type="submit">➕ Add / Update Pokémon</button>
+      </form>
+
+      <div class="overflow-auto rounded-2xl border">
+        <table class="min-w-full text-sm">
+          <thead class="bg-slate-50 sticky top-0">
+            <tr class="text-left">
+              <th class="p-3">Owner</th><th class="p-3">Image</th><th class="p-3">Species</th><th class="p-3">Lv.</th>
+              <th class="p-3">Nature</th><th class="p-3">Price</th><th class="p-3">Notes</th><th class="p-3">Actions</th>
+            </tr>
+          </thead>
+          <tbody id="rowsPk"></tbody>
+        </table>
+      </div>
+    </section>
   </div>
+
+  <!-- Requests -->
+  <section class="card p-4 space-y-3">
+    <div class="flex items-center justify-between">
+      <h2 class="brand text-xl">Requests (from site)</h2>
+      <div class="flex items-center gap-2">
+        <input id="qReq" class="input" placeholder="Search IGN/Discord/type">
+        <select id="reqFilter" class="input">
+          <option value="All">All</option>
+          <option value="price">Price</option>
+          <option value="new">New Item</option>
+          <option value="sell">Sell Items</option>
+          <option value="other">Other</option>
+          <option value="open">Open only</option>
+          <option value="closed">Closed only</option>
+        </select>
+      </div>
+    </div>
+    <div class="overflow-auto rounded-2xl border">
+      <table class="min-w-full text-sm">
+        <thead class="bg-slate-50 sticky top-0">
+          <tr class="text-left">
+            <th class="p-3">When</th><th class="p-3">IGN</th><th class="p-3">Discord</th><th class="p-3">Type</th>
+            <th class="p-3">Summary</th><th class="p-3">Total</th><th class="p-3">Status</th><th class="p-3">Actions</th>
+          </tr>
+        </thead>
+        <tbody id="rowsReq"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- Request detail modal -->
+  <div id="reqModal" class="hidden fixed inset-0 bg-black/40 z-50 items-center justify-center p-4">
+    <div class="bg-white rounded-xl max-w-2xl w-full p-4">
+      <div class="flex items-center justify-between">
+        <h3 class="brand text-xl">Request Details</h3>
+        <button class="btn" id="reqClose">Close</button>
+      </div>
+      <div id="reqBody" class="mt-3 text-sm"></div>
+      <div class="mt-3 flex gap-2">
+        <button id="reqToggle" class="btn"></button>
+        <button id="reqDelete" class="btn">Delete</button>
+      </div>
+    </div>
+  </div>
+
+  <p class="text-xs text-slate-500">Edits save instantly. Export CSV any time for a backup (`shop.csv`).</p>
+</div>
 
 <script>
 /* ---------- constants, state ---------- */
@@ -326,54 +341,55 @@ function renderPk(){
 }
 
 /* image preview */
-$('#pkImg').addEventListener('change', (e)=>{
-  const f=e.target.files?.[0]; const prev=$('#pkPreview');
+document.getElementById('pkImg').addEventListener('change', (e)=>{
+  const f=e.target.files?.[0]; const prev=document.getElementById('pkPreview');
   if(!f){ prev.classList.add('hidden'); prev.src=''; return; }
   const url=URL.createObjectURL(f); prev.src=url; prev.classList.remove('hidden');
 });
 
-/* add/update pokemon (with optional upload) */
-$('#addPkForm').addEventListener('submit', async (e)=>{
+/* add/update pokemon (with optional upload) — FIXED handler */
+document.getElementById('addPkForm').addEventListener('submit', async (e)=>{
   e.preventDefault();
-  const owner=$('#pkOwner').value;
-  const nickname=$('#pkNickname').value.trim();
-  const species=$('#pkSpecies').value.trim();
+  const owner=document.getElementById('pkOwner').value;
+  const nickname=document.getElementById('pkNickname').value.trim();
+  const species=document.getElementById('pkSpecies').value.trim();
+  if(!species){ alert('Species is required'); return; }
   const id=idify(owner+'-'+species+'-'+Date.now());
-  const level=Number($('#pkLevel').value||0);
-  const nature=$('#pkNature').value.trim();
-  const price=Number($('#pkPrice').value||0);
-  const tera=$('#pkTera').value.trim();
-  const ball=$('#pkBall').value.trim();
-  const held=$('#pkHeld').value.trim();
-  const ability=$('#pkAbility').value.trim();
-  const size=$('#pkSize').value.trim();
-  const shiny=$('#pkShiny').checked;
-  const neutered=$('#pkNeutered').checked;
-  const ivs={hp:+($('#ivHP').value||0),atk:+($('#ivATK').value||0),def:+($('#ivDEF').value||0),spa:+($('#ivSPA').value||0),spd:+($('#ivSPD').value||0),spe:+($('#ivSPE').value||0)};
-  const evs={hp:+($('#evHP').value||0),atk:+($('#evATK').value||0),def:+($('#evDEF').value||0),spa:+($('#evSPA').value||0),spd:+($('#evSPD').value||0),spe:+($('#evSPE').value||0)};
-  const moves=$('#pkMoves').value.trim();
-  const notes=$('#pkNotes').value.trim();
+  const level=Number(document.getElementById('pkLevel').value||0);
+  const nature=document.getElementById('pkNature').value.trim();
+  const price=Number(document.getElementById('pkPrice').value||0);
+  const tera=document.getElementById('pkTera').value.trim();
+  const ball=document.getElementById('pkBall').value.trim();
+  const held=document.getElementById('pkHeld').value.trim();
+  const ability=document.getElementById('pkAbility').value.trim();
+  const size=document.getElementById('pkSize').value.trim();
+  const shiny=document.getElementById('pkShiny').checked;
+  const neutered=document.getElementById('pkNeutered').checked;
+  const ivs={hp:+(document.getElementById('ivHP').value||0),atk:+(document.getElementById('ivATK').value||0),def:+(document.getElementById('ivDEF').value||0),spa:+(document.getElementById('ivSPA').value||0),spd:+(document.getElementById('ivSPD').value||0),spe:+(document.getElementById('ivSPE').value||0)};
+  const evs={hp:+(document.getElementById('evHP').value||0),atk:+(document.getElementById('evATK').value||0),def:+(document.getElementById('evDEF').value||0),spa:+(document.getElementById('evSPA').value||0),spd:+(document.getElementById('evSPD').value||0),spe:+(document.getElementById('evSPE').value||0)};
+  const moves=document.getElementById('pkMoves').value.trim();
+  const notes=document.getElementById('pkNotes').value.trim();
 
   let imageUrl='';
-  const file=$('#pkImg').files?.[0];
-  if(file && storage){
-    const path=`shops/${$('#shopId').value.trim()}/pk_images/${id}-${file.name}`.replace(/\s+/g,'_');
+  const file=document.getElementById('pkImg').files?.[0];
+  if(file && window.storage){
+    const path=`shops/${document.getElementById('shopId').value.trim()}/pk_images/${id}-${file.name}`.replace(/\s+/g,'_');
     const snap=await storage.ref(path).put(file);
     imageUrl=await snap.ref.getDownloadURL();
   }
 
   patchPk(id,{ id, owner, nickname, species, level, nature, price, tera, ball, held, ability, size, shiny, neutered, ivs, evs, moves, notes, imageUrl });
-  e.target.reset(); $('#pkPreview').classList.add('hidden'); $('#pkPreview').src='';
+  e.target.reset(); document.getElementById('pkPreview').classList.add('hidden'); document.getElementById('pkPreview').src='';
 });
 
 /* items add/update */
-$('#addItemForm').addEventListener('submit',(e)=>{
+document.getElementById('addItemForm').addEventListener('submit',(e)=>{
   e.preventDefault();
-  const name=$('#itemName').value.trim();
-  const category=$('#itemCat').value.trim();
-  const sell=Number($('#itemPrice').value||0);
-  const stock=$('#itemStock').value===''?'':Number($('#itemStock').value);
-  const notes=$('#itemNotes').value.trim();
+  const name=document.getElementById('itemName').value.trim();
+  const category=document.getElementById('itemCat').value.trim();
+  const sell=Number(document.getElementById('itemPrice').value||0);
+  const stock=document.getElementById('itemStock').value===''?'':Number(document.getElementById('itemStock').value);
+  const notes=document.getElementById('itemNotes').value.trim();
   const id=idify(name+'-'+category);
   const buyPrice=Math.round((sell||0)*BUY_RATE);
   patchItem(id,{ id, name, category, sellPrice:sell, buyPrice, stock, notes });
@@ -398,12 +414,13 @@ document.addEventListener('click',(e)=>{
   if(t.dataset.act==='delPk'){ if(confirm('Delete Pokémon?')) removePk(id); }
 });
 
-/* ---------- requests UI ---------- */
+/* ---------- requests table + detail modal ---------- */
 function fmtDate(ts){ try{const d=new Date(ts||0); return d.toLocaleString();}catch{return ''} }
+
 function renderReq(){
-  const q=($('#qReq')?.value||'').toLowerCase();
-  const f=($('#reqFilter')?.value||'All');
-  const tb=$('#rowsReq'); if(!tb) return; tb.innerHTML='';
+  const q=(document.getElementById('qReq')?.value||'').toLowerCase();
+  const f=(document.getElementById('reqFilter')?.value||'All');
+  const tb=document.getElementById('rowsReq'); if(!tb) return; tb.innerHTML='';
   const data=requests.filter(r=>{
     const matchesQ = [r.ign,r.discord,r.type,r.message].join(' ').toLowerCase().includes(q);
     const status = r.status || (r.closed?'closed':'open');
@@ -411,33 +428,80 @@ function renderReq(){
     return matchesQ && typeOk;
   });
   for(const r of data){
-    const details = r.type==='sell'
-      ? (r.items||[]).map(i=>`${i.qty}× ${i.name} @ $${i.price}`).join(', ')
-      : (r.message||'');
-    const total = r.type==='sell' ? (r.total|| (r.items||[]).reduce((s,i)=> s+i.qty*i.price,0)) : '';
+    const summary = r.type==='sell'
+      ? `${(r.items||[]).length} items`
+      : (r.message ? (r.message.length>40 ? r.message.slice(0,40)+'…' : r.message) : '');
+    const total = r.type==='sell' ? (r.total|| (r.items||[]).reduce((s,i)=> s + (Number(i.price||0)*Number(i.qty||0)),0)) : '';
     const tr=document.createElement('tr');
     tr.innerHTML=`
       <td class="p-2 whitespace-nowrap">${fmtDate(r.createdAt)}</td>
-      <td class="p-2">${r.ign||''}<div class="text-xs text-slate-500">${r.discord||''}</div></td>
+      <td class="p-2">${r.ign||''}</td>
+      <td class="p-2">${r.discord||''}</td>
       <td class="p-2">${r.type||''}</td>
-      <td class="p-2">${details}</td>
+      <td class="p-2">${summary}</td>
       <td class="p-2">${total?('$'+total):''}</td>
       <td class="p-2">${r.status|| (r.closed?'closed':'open')}</td>
-      <td class="p-2 flex gap-2">
-        <button class="btn" data-req-act="toggle" data-id="${r.id}">${(r.status==='closed'||r.closed)?'Reopen':'Close'}</button>
-        <button class="btn" data-req-act="delete" data-id="${r.id}">Delete</button>
+      <td class="p-2">
+        <button class="btn" data-open-req="${r.id}">Open</button>
       </td>`;
     tb.appendChild(tr);
   }
 }
-document.addEventListener('click', (e)=>{
-  const t=e.target; if(!t.matches('[data-req-act]')) return;
-  const id=t.getAttribute('data-id'); if(!id) return;
-  if(t.dataset.reqAct==='toggle'){ const cur=requests.find(x=>x.id===id)||{}; patchReq(id,{ status: (cur.status==='closed'?'open':'closed') }); }
-  if(t.dataset.reqAct==='delete'){ if(confirm('Delete this request?')) removeReq(id); }
+document.getElementById('qReq')?.addEventListener('input', renderReq);
+document.getElementById('reqFilter')?.addEventListener('change', renderReq);
+
+document.addEventListener('click',(e)=>{
+  const openId = e.target.getAttribute('data-open-req');
+  if(openId){
+    const r = requests.find(x=>x.id===openId);
+    if(!r) return;
+    const body = document.getElementById('reqBody');
+    const msgBlock = r.message ? `<div class="mt-2"><span class="font-semibold">Message:</span><div class="mt-1 whitespace-pre-wrap">${r.message}</div></div>` : '';
+    const itemsBlock = (r.type==='sell' && Array.isArray(r.items)) ? `
+      <div class="mt-3">
+        <div class="font-semibold mb-1">Selling items</div>
+        <div class="rounded-lg border overflow-hidden">
+          <table class="w-full text-sm">
+            <thead class="bg-slate-50"><tr><th class="p-2 text-left">Item</th><th class="p-2 text-left">Qty</th><th class="p-2 text-left">Price</th><th class="p-2 text-left">Subtotal</th></tr></thead>
+            <tbody>
+              ${r.items.map(i=>`<tr><td class="p-2">${i.name}</td><td class="p-2">${i.qty}</td><td class="p-2">$${i.price}</td><td class="p-2">$${Number(i.qty)*Number(i.price)}</td></tr>`).join('')}
+            </tbody>
+          </table>
+        </div>
+        <div class="text-right mt-2 font-semibold">Total: $${(r.items||[]).reduce((s,i)=> s + (Number(i.price||0)*Number(i.qty||0)),0)}</div>
+      </div>` : '';
+
+    body.innerHTML = `
+      <div class="text-sm text-slate-700">
+        <div><span class="font-semibold">When:</span> ${fmtDate(r.createdAt)}</div>
+        <div><span class="font-semibold">IGN:</span> ${r.ign||''}</div>
+        <div><span class="font-semibold">Discord:</span> ${r.discord||''}</div>
+        <div><span class="font-semibold">Type:</span> ${r.type||''}</div>
+        <div><span class="font-semibold">Status:</span> ${r.status|| (r.closed?'closed':'open')}</div>
+        ${msgBlock}
+        ${itemsBlock}
+      </div>
+    `;
+    document.getElementById('reqToggle').textContent = (r.status==='closed'||r.closed)?'Reopen':'Close';
+    document.getElementById('reqToggle').setAttribute('data-id', r.id);
+    document.getElementById('reqDelete').setAttribute('data-id', r.id);
+    document.getElementById('reqModal').classList.remove('hidden');
+    document.getElementById('reqModal').classList.add('flex');
+  }
 });
-$('#qReq')?.addEventListener('input', renderReq);
-$('#reqFilter')?.addEventListener('change', renderReq);
+document.getElementById('reqClose').addEventListener('click', ()=>{
+  document.getElementById('reqModal').classList.add('hidden');
+  document.getElementById('reqModal').classList.remove('flex');
+});
+document.getElementById('reqToggle').addEventListener('click', (e)=>{
+  const id=e.target.getAttribute('data-id'); if(!id) return;
+  const cur=requests.find(x=>x.id===id)||{};
+  patchReq(id,{ status: (cur.status==='closed'?'open':'closed') });
+});
+document.getElementById('reqDelete').addEventListener('click', (e)=>{
+  const id=e.target.getAttribute('data-id'); if(!id) return;
+  if(confirm('Delete this request?')) removeReq(id);
+});
 
 /* ---------- CSV export helpers ---------- */
 function escapeCsv(v){ const s=String(v??''); return /[",\n]/.test(s)?`"${s.replace(/"/g,'""')}"`:s; }
@@ -470,13 +534,11 @@ document.getElementById('dlPkCsv').addEventListener('click', ()=>{
 
 /* Requests CSV */
 document.getElementById('dlReqCsv').addEventListener('click', ()=>{
-  const rows=[['When','IGN','Discord','Type','Details','Total','Status']];
+  const rows=[['When','IGN','Discord','Type','Message','Items','Total','Status']];
   for(const r of requests){
-    const details = r.type==='sell'
-      ? (r.items||[]).map(i=>`${i.qty}x ${i.name} @ ${i.price}`).join('; ')
-      : (r.message||'');
+    const itemsStr = r.type==='sell' ? (r.items||[]).map(i=>`${i.qty}x ${i.name} @ ${i.price}`).join('; ') : '';
     const total = r.type==='sell' ? (r.total || (r.items||[]).reduce((s,i)=>s+i.qty*i.price,0)) : '';
-    rows.push([new Date(r.createdAt||0).toISOString(), r.ign||'', r.discord||'', r.type||'', details, total, r.status|| (r.closed?'closed':'open')]);
+    rows.push([new Date(r.createdAt||0).toISOString(), r.ign||'', r.discord||'', r.type||'', r.message||'', itemsStr, total, r.status|| (r.closed?'closed':'open')]);
   }
   const a=document.createElement('a');
   a.href=URL.createObjectURL(new Blob([rowsToCsv(rows)],{type:'text/csv'}));
@@ -536,11 +598,6 @@ document.getElementById('saveCfg').addEventListener('click', ()=>{ saveCfg(); co
 document.getElementById('reload').addEventListener('click', ()=> connect());
 document.getElementById('signOut').addEventListener('click', async ()=>{
   try{ await auth?.signOut(); document.getElementById('status').textContent='Signed out'; }catch(e){ console.error(e); alert('Sign out failed'); }
-});
-document.getElementById('clearAll').addEventListener('click', async ()=>{
-  if(!db){ return alert('Connect first (Save config)'); }
-  if(!confirm('Delete ALL items for this shop?')) return;
-  await refItems.remove(); alert('All items cleared');
 });
 
 /* ---------- searches ---------- */
